@@ -1,0 +1,30 @@
+# ความลับ — ห้าม commit เด็ดขาด
+.env
+.env.*
+!.env.example
+
+# ข้อมูลจาก ERP
+*.CSV
+*.csv
+*.xlsx
+*.xls
+
+# build
+node_modules/
+dist/
+*.local
+
+# Android
+*.apk
+*.aab
+*.keystore
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# เครื่องมือ
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

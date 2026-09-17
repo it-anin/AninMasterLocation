@@ -1,0 +1,27 @@
+{
+  "name": "aninmaster-location",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "import": "node scripts/import-catalog.mjs",
+    "import:dry": "node scripts/import-catalog.mjs --dry-run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "papaparse": "^5.4.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.0",
+    "vite": "^6.0.0"
+  }
+}
