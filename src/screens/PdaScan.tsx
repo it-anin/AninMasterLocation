@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useScanner } from '../lib/useScanner';
-import { lookupBarcode, saveLocation, type LookupResult } from '../lib/queries';
+import {
+  lookupBarcode,
+  loadWarehouseMap,
+  parseLocation,
+  saveLocation,
+  type LookupResult,
+  type MapCell,
+} from '../lib/queries';
 import { getStaff } from '../lib/auth';
 import { EditLocationDialog } from '../components/EditLocationDialog';
+import { WarehouseMap } from '../components/WarehouseMap';
 
 type State =
   | { kind: 'idle' }
@@ -21,7 +29,19 @@ export function PdaScan() {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [editing, setEditing] = useState(false);
+  const [mapCells, setMapCells] = useState<MapCell[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // โหลดผังคลังครั้งเดียวตอนเปิดหน้า แล้วรีเฟรชเมื่อมีการกรอกตำแหน่งใหม่
+  const refreshMap = useCallback(() => {
+    loadWarehouseMap()
+      .then(setMapCells)
+      .catch(() => {
+        // ผังโหลดไม่ได้ก็ยังใช้งานได้ — จะ fallback ไปแสดงรหัสตัวใหญ่
+      });
+  }, []);
+
+  useEffect(refreshMap, [refreshMap]);
 
   const focusInput = useCallback(() => {
     // หน่วงนิดเดียวให้ DOM อัปเดตเสร็จก่อน ไม่งั้น focus ไม่ติดบางจังหวะ
@@ -117,23 +137,38 @@ export function PdaScan() {
 
         {found && (
           <div className={`card ${found.location ? 'card-ok' : 'card-warn'}`}>
-            <div className="item-name">{found.name}</div>
-
             {found.location ? (
-              <>
-                <div className="loc-label">ตำแหน่งจัดเก็บ</div>
-                <div className="loc-value">{found.location}</div>
-              </>
+              // แผนผังใช้ได้ต่อเมื่อรหัสแยกโซน/ชั้นออก (เช่น A-03)
+              // ถ้าเป็นข้อความอิสระ (เช่น "ตู้เย็น") ให้แสดงรหัสตัวใหญ่แทน
+              canMap(found, mapCells) ? (
+                <>
+                  <div className="loc-label">
+                    โซน {found.zone} — ชั้นที่ {found.aisle}
+                  </div>
+                  <WarehouseMap
+                    cells={mapCells}
+                    activeZone={found.zone}
+                    activeAisle={found.aisle}
+                    activeLabel={found.location}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="loc-label">ตำแหน่งจัดเก็บ</div>
+                  <div className="loc-value">{found.location}</div>
+                </>
+              )
             ) : (
               <div className="loc-missing">ยังไม่ได้ระบุตำแหน่ง</div>
             )}
+
+            <div className="item-name">{found.name}</div>
 
             {found.note && <div className="note">📝 {found.note}</div>}
 
             <div className="meta">
               {found.item_id}
               {found.unit ? ` · ${found.unit}` : ''}
-              {found.category ? ` · ${found.category}` : ''}
             </div>
             <div className="barcode-line">{found.barcode}</div>
 
@@ -179,20 +214,49 @@ export function PdaScan() {
           }}
           onSaved={async (loc, note) => {
             await saveLocation(found.item_id, loc, getStaff() || 'ไม่ระบุ', note);
+            // ⚠️ zone/aisle เป็น generated column ฝั่ง DB — ต้องคำนวณซ้ำฝั่งนี้ด้วย
+            //    ไม่งั้นผังจะไฮไลท์ช่องเก่าจนกว่าจะสแกนใหม่
+            const parsed = parseLocation(loc);
             setState({
               kind: 'found',
-              data: { ...found, location: loc, note: note ?? null, updated_by: getStaff() },
+              data: {
+                ...found,
+                location: loc,
+                zone: parsed.zone,
+                aisle: parsed.aisle,
+                note: note ?? null,
+                updated_by: getStaff(),
+              },
             });
             setRecent((prev) =>
               prev.map((r) => (r.barcode === found.barcode ? { ...r, location: loc } : r))
             );
             setEditing(false);
+            refreshMap(); // ตำแหน่งใหม่อาจเป็นโซน/ชั้นที่ยังไม่เคยมีในผัง
             focusInput();
           }}
         />
       )}
     </div>
   );
+}
+
+/**
+ * ตัดสินว่าจะวาดผังหรือแสดงรหัสตัวใหญ่แทน
+ *
+ * ต้องครบ 2 อย่าง:
+ *  1. รหัสแยกโซน/ชั้นออกได้ (zone + aisle ไม่ null)
+ *  2. มีผังให้วาดจริง — ถ้าทั้งคลังมีอยู่ตำแหน่งเดียว ตารางช่องเดียวไม่มีประโยชน์
+ *     สู้แสดงรหัสตัวใหญ่ชัดๆ ดีกว่า
+ */
+function canMap(found: LookupResult, cells: MapCell[]): found is LookupResult & {
+  zone: string;
+  aisle: number;
+} {
+  if (!found.zone || found.aisle == null) return false;
+  const zones = new Set(cells.map((c) => c.zone));
+  zones.add(found.zone);
+  return cells.length >= 2 || zones.size >= 2;
 }
 
 /** เสียงตอบรับ — พนักงานไม่ต้องจ้องจอตอนสแกนต่อเนื่อง */

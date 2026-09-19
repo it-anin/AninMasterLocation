@@ -49,6 +49,7 @@ grant select, insert, update, delete
   on anin_loc.items, anin_loc.barcodes, anin_loc.item_locations to anon;
 grant select on anin_loc.location_history to anon;
 grant select on anin_loc.v_barcode_lookup to anon;
+grant select on anin_loc.v_warehouse_map to anon;
 grant usage, select on all sequences in schema anin_loc to anon;
 grant execute on function anin_loc.search_items(text, boolean, int, int) to anon;
 

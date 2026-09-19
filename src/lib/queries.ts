@@ -8,9 +8,37 @@ export interface LookupResult {
   name: string;
   category: string | null;
   location: string | null;
+  /** โซน แยกอัตโนมัติจาก location — null ถ้ารหัสไม่เข้ารูปแบบ <ตัวอักษร><ตัวเลข> */
+  zone: string | null;
+  /** ชั้น แยกอัตโนมัติจาก location */
+  aisle: number | null;
   note: string | null;
   updated_by: string | null;
   location_updated_at: string | null;
+}
+
+/** หนึ่งช่องบนผังคลัง */
+export interface MapCell {
+  zone: string;
+  aisle: number;
+  item_count: number;
+}
+
+/**
+ * แยกโซน/ชั้นจากรหัสตำแหน่ง
+ *
+ * ⚠️ ต้องให้ผลตรงกับ generated column ใน 0001_schema.sql เป๊ะๆ
+ *    ถ้าแก้ regex ที่นี่ ต้องแก้ใน SQL ด้วย ไม่งั้นผังจะไฮไลท์ผิดช่อง
+ *    รูปแบบที่อ่านออก: A-03 · A03 · a-3 · B 11 · C_02 · AA-12 · A-03-2
+ */
+export function parseLocation(location: string | null): {
+  zone: string | null;
+  aisle: number | null;
+} {
+  if (!location) return { zone: null, aisle: null };
+  const m = /^\s*([A-Za-z]+)\s*[-_ ]?\s*(\d+)/.exec(location);
+  if (!m) return { zone: null, aisle: null };
+  return { zone: m[1].toUpperCase(), aisle: parseInt(m[2], 10) };
 }
 
 export interface SearchRow {
@@ -50,6 +78,16 @@ export async function lookupBarcode(barcode: string): Promise<LookupResult | nul
 
   if (error) throw new Error(error.message);
   return data as LookupResult | null;
+}
+
+/**
+ * ผังคลังทั้งหมด — สร้างจากตำแหน่งที่กรอกเข้ามาจริง ไม่ต้องตั้งค่าล่วงหน้า
+ * ช่วงแรกที่ยังไม่มีข้อมูลจะได้ array ว่าง หน้าจอจะ fallback ไปแสดงรหัสตัวใหญ่
+ */
+export async function loadWarehouseMap(): Promise<MapCell[]> {
+  const { data, error } = await supabase.from('v_warehouse_map').select('*');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MapCell[];
 }
 
 /** ค้นหาสินค้าสำหรับหน้า Desktop */

@@ -68,6 +68,30 @@ create index if not exists item_locations_location_idx
   on anin_loc.item_locations (location);
 
 
+-- ── 3.1 แยกโซน/ชั้น อัตโนมัติสำหรับหน้าแผนผัง ───────────────────────
+-- location ยังเป็นข้อความอิสระเหมือนเดิม พนักงานพิมพ์อะไรก็ได้
+-- สองคอลัมน์นี้เป็น GENERATED — Postgres คำนวณให้เอง ไม่ต้องกรอกเพิ่ม
+--
+-- รูปแบบที่อ่านออก: <โซน><ตัวคั่น><ชั้น>
+--   ตัวอย่างที่อ่านออก: A-03 · A03 · a-3 · B 11 · C_02 · AA-12 · A-03-2 (เอา 2 ระดับแรก)
+--   โซน  = ตัวอักษร A-Z หนึ่งตัวขึ้นไป (แปลงเป็นตัวใหญ่เสมอ)
+--   ชั้น  = ตัวเลข (ตัวคั่นมีหรือไม่มีก็ได้)
+-- ถ้าไม่ตรงรูปแบบ (เช่น "ตู้เย็น", "หน้าร้าน", "ชั้น 3") จะได้ null ทั้งคู่
+-- แล้วหน้าจอจะ fallback ไปแสดงรหัสตัวใหญ่แทนผัง — ไม่ใช่ error
+alter table anin_loc.item_locations
+  add column if not exists zone text
+    generated always as (
+      upper((regexp_match(location, '^\s*([A-Za-z]+)\s*[-_ ]?\s*(\d+)'))[1])
+    ) stored,
+  add column if not exists aisle int
+    generated always as (
+      ((regexp_match(location, '^\s*([A-Za-z]+)\s*[-_ ]?\s*(\d+)'))[2])::int
+    ) stored;
+
+create index if not exists item_locations_zone_aisle_idx
+  on anin_loc.item_locations (zone, aisle);
+
+
 -- ── 4. ประวัติการแก้ไข ──────────────────────────────────────────────
 create table if not exists anin_loc.location_history (
   id            bigserial primary key,
@@ -96,12 +120,28 @@ select
   i.name,
   i.category,
   l.location,
+  l.zone,
+  l.aisle,
   l.note,
   l.updated_by,
   l.updated_at as location_updated_at
 from anin_loc.barcodes b
 join anin_loc.items i on i.item_id = b.item_id
 left join anin_loc.item_locations l on l.item_id = b.item_id;
+
+
+-- ── 5.1 ผังคลัง — โซน/ชั้นทั้งหมดที่ใช้งานจริง ──────────────────────
+-- สร้างผังจากข้อมูลที่กรอกเข้ามาจริง ไม่ต้องตั้งค่าผังล่วงหน้า
+-- ยิ่งกรอกมาก ผังยิ่งสมบูรณ์ขึ้นเอง
+create or replace view anin_loc.v_warehouse_map as
+select
+  zone,
+  aisle,
+  count(*)::int as item_count
+from anin_loc.item_locations
+where zone is not null and aisle is not null
+group by zone, aisle
+order by zone, aisle;
 
 
 -- ── 6. Trigger เขียนประวัติอัตโนมัติ ────────────────────────────────

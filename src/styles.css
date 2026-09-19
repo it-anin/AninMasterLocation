@@ -11,6 +11,8 @@
   --warn-bg: #fdf6e3;
   --error: #b42318;
   --error-bg: #fdecea;
+  --inset: #eef1f2;        /* พื้นช่องว่างบนผัง / หัวตาราง */
+  --on-primary: #ffffff;   /* ตัวหนังสือบนพื้นสีหลัก */
   --radius: 10px;
 }
 
@@ -53,9 +55,9 @@ main { flex: 1; overflow: auto; }
   font: inherit;
   cursor: pointer;
 }
-.btn:hover:not(:disabled) { background: #eef1f2; }
+.btn:hover:not(:disabled) { background: var(--inset); }
 .btn:disabled { opacity: 0.5; cursor: default; }
-.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: #0c5f59; }
 .btn-danger { color: var(--error); border-color: #f0c4c0; }
 .btn-sm { padding: 4px 9px; font-size: 13px; }
@@ -125,6 +127,52 @@ main { flex: 1; overflow: auto; }
 .loc-value { font-size: 44px; font-weight: 800; color: var(--ok); line-height: 1.1; word-break: break-word; }
 .loc-missing { margin-top: 12px; font-size: 22px; font-weight: 700; color: var(--warn); }
 
+/* ── ผังคลัง (หน้าจอแบบที่ 3) ─────────────────────────── */
+.map { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 12px; }
+.map-row { display: flex; align-items: stretch; gap: 4px; }
+
+/* ป้ายโซนด้านซ้ายของแต่ละแถว */
+.map-zone {
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--inset);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+.map-zone.on { background: var(--primary); color: var(--on-primary); }
+
+.map-cells { flex: 1; display: flex; gap: 4px; min-width: 0; }
+
+/* ช่อง = ชั้นหนึ่งชั้นในโซนนั้น */
+.map-cell {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--inset);
+  color: var(--muted);
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ช่องที่สินค้าอยู่ — ต้องเด่นที่สุดบนจอ */
+.map-cell.on {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 700;
+  font-size: 13px;
+  aspect-ratio: auto;
+  padding: 8px 4px;
+  box-shadow: 0 0 0 3px var(--ok-bg);
+  letter-spacing: -0.2px;
+}
+
 .note { margin-top: 8px; font-size: 14px; }
 .meta { margin-top: 10px; font-size: 13px; color: var(--muted); }
 .meta-small { margin-top: 4px; font-size: 12px; color: var(--muted); }
@@ -180,7 +228,7 @@ main { flex: 1; overflow: auto; }
 
 .table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .table th, .table td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-.table th { background: #eef1f2; font-size: 13px; color: var(--muted); font-weight: 600; }
+.table th { background: var(--inset); font-size: 13px; color: var(--muted); font-weight: 600; }
 .table tbody tr:last-child td { border-bottom: none; }
 .table tbody tr:hover { background: #fafbfb; }
 
@@ -191,7 +239,7 @@ main { flex: 1; overflow: auto; }
 .empty { text-align: center; color: var(--muted); padding: 28px; }
 
 .loc-chip { display: inline-block; padding: 3px 9px; background: var(--ok-bg); color: var(--ok); border-radius: 6px; font-weight: 600; font-size: 13px; }
-.loc-chip-none { background: #eef1f2; color: var(--muted); font-weight: 400; }
+.loc-chip-none { background: var(--inset); color: var(--muted); font-weight: 400; }
 
 .actions { display: flex; gap: 5px; white-space: nowrap; }
 
@@ -230,8 +278,27 @@ main { flex: 1; overflow: auto; }
     --warn-bg: #33290d;
     --error: #f87171;
     --error-bg: #3a1a18;
+    --inset: #202a28;
+    --on-primary: #06201d;   /* พื้นสีหลักในโหมดมืดสว่าง ตัวหนังสือต้องเข้ม */
   }
-  :root:not([data-theme='light']) .table th { background: #202a28; }
-  :root:not([data-theme='light']) .btn-primary { color: #06201d; }
   :root:not([data-theme='light']) .table tbody tr:hover { background: #1f2926; }
 }
+
+/* toggle เลือกโหมดมืดเอง — ต้องชนะ prefers-color-scheme: light ด้วย */
+:root[data-theme='dark'] {
+  --bg: #121716;
+  --surface: #1a2220;
+  --border: #2c3835;
+  --text: #e8edec;
+  --muted: #93a29e;
+  --primary: #2dd4bf;
+  --ok: #2dd4bf;
+  --ok-bg: #12312d;
+  --warn: #fbbf24;
+  --warn-bg: #33290d;
+  --error: #f87171;
+  --error-bg: #3a1a18;
+  --inset: #202a28;
+  --on-primary: #06201d;
+}
+:root[data-theme='dark'] .table tbody tr:hover { background: #1f2926; }
