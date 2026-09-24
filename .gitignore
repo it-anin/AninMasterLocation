@@ -29,3 +29,5 @@ android/local.properties
 .idea/
 .DS_Store
 Thumbs.db
+
+.vercel

@@ -30,8 +30,8 @@ import com.google.android.play.core.ktx.isFlexibleUpdateAllowed
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        // ⚠️ เปลี่ยนเป็น URL Vercel จริงหลัง deploy ครั้งแรก แล้ว build APK ใหม่
-        const val WEBAPP_URL = "https://aninmaster-location.vercel.app?android=1"
+        // ⚠️ ต้องตรงกับชื่อโปรเจกต์บน Vercel — เปลี่ยนแล้วต้อง build APK ใหม่
+        const val WEBAPP_URL = "https://aninmasterlocation.vercel.app?android=1"
 
         // Scanner broadcast action — KTE: com.kte.scan.result
         // เพิ่ม action อื่นได้ใน onResume() ถ้าใช้ scanner ยี่ห้ออื่น
