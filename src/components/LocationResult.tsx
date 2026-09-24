@@ -39,74 +39,81 @@ interface Props {
 }
 
 export function LocationResult({ found, mapCells, onEdit }: Props) {
+  // แผนผังใช้ได้ต่อเมื่อรหัสแยกโซน/เชลฟ์ออก (เช่น J61)
+  // ถ้าเป็นข้อความอิสระ (เช่น "PRE") ให้แสดงรหัสตัวใหญ่แทน
+  const mapped = found.location && canMap(found, mapCells) ? found : null;
+
   return (
     <div className={`card ${found.location ? 'card-ok' : 'card-warn'}`}>
-      {found.location ? (
-        // แผนผังใช้ได้ต่อเมื่อรหัสแยกโซน/เชลฟ์ออก (เช่น J61)
-        // ถ้าเป็นข้อความอิสระ (เช่น "PRE") ให้แสดงรหัสตัวใหญ่แทน
-        canMap(found, mapCells) ? (
-          <>
-            <div className="loc-code">{found.location}</div>
-            <div className="loc-label">
-              โซน {found.zone} · เชลฟ์ที่ {found.aisle}
-              {found.slot != null ? ` · ชั้นที่ ${found.slot} (นับจากล่างขึ้นบน) ` : ''}
-            </div>
-
-            <div className="step-tag">
-              <i>1</i> เดินไปชั้นวางโซน {found.zone}
-            </div>
-            {FLOOR_PLAN_ZONES.has(found.zone) ? (
-              // โซนอยู่ในห้องหลัก — โชว์ผังภาพชั้นวางจริงแทน chip ย่อ
-              <WarehouseFloorPlan activeZone={found.zone} />
-            ) : (
-              // โซนอยู่นอกห้อง (เช่น L, M, N, O) — ไม่มีในภาพผังห้องหลัก
-              <WarehouseMiniMap cells={mapCells} activeZone={found.zone} />
-            )}
-
-            {SHELF_ZONES.has(found.zone) ? (
-              <>
-                <div className="step-tag">
-                  <i>2</i> เชลฟ์ที่ {found.aisle}
-                  {found.slot != null ? ` · ชั้นที่ ${found.slot} (จากล่างขึ้นบน) ` : ''}
-                </div>
-                <ShelfFront zone={found.zone} shelf={found.aisle} slot={found.slot} />
-                <div className="sf-axis">
-                  {/* โซน B, D, F, H, J นับเชลฟ์จากขวา ป้ายบอกทิศต้องสลับตาม */}
-                  <span>
-                    {isMirroredZone(found.zone) ? 'เชลฟ์ที่ 1 อยู่ขวาสุด →' : '← เชลฟ์ที่ 1'}
-                  </span>
-                  <span>ชั้น 1 = นับจากล่างขึ้นบน</span>
-                </div>
-              </>
-            ) : (
-              // โซนไม่มี layout ชั้นวาง — ใช้ตารางย่อแบบเดิม
-              <WarehouseMap
-                cells={mapCells}
-                activeZone={found.zone}
-                activeAisle={found.aisle}
-                activeLabel={found.location}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            <div className="loc-label">ตำแหน่งจัดเก็บ</div>
-            <div className="loc-value">{found.location}</div>
-          </>
-        )
+      {mapped ? (
+        <>
+          <div className="loc-code">{mapped.location}</div>
+          <div className="loc-label">
+            โซน {mapped.zone} · เชลฟ์ที่ {mapped.aisle}
+            {mapped.slot != null ? ` · ชั้นที่ ${mapped.slot} (นับจากล่างขึ้นบน) ` : ''}
+          </div>
+        </>
+      ) : found.location ? (
+        <>
+          <div className="loc-label">ตำแหน่งจัดเก็บ</div>
+          <div className="loc-value">{found.location}</div>
+        </>
       ) : (
         <div className="loc-missing">ยังไม่ได้ระบุตำแหน่ง</div>
       )}
 
-      <div className="item-name">{found.name}</div>
+      {/* รายละเอียดสินค้าอยู่ใต้รหัสตำแหน่งทันที — บน PDA เห็นได้โดยไม่ต้องเลื่อนผ่านภาพผัง */}
+      <div className="item-info">
+        <div className="item-name">{found.name}</div>
 
-      {found.note && <div className="note">📝 {found.note}</div>}
+        {found.note && <div className="note">📝 {found.note}</div>}
 
-      <div className="meta">
-        {found.item_id}
-        {found.unit ? ` · ${found.unit}` : ''}
+        <div className="meta">
+          {found.item_id}
+          {found.unit ? ` · ${found.unit}` : ''}
+        </div>
+        <div className="barcode-line">{found.barcode}</div>
       </div>
-      <div className="barcode-line">{found.barcode}</div>
+
+      {mapped && (
+        <>
+          <div className="step-tag">
+            <i>1</i> เดินไปชั้นวางโซน {mapped.zone}
+          </div>
+          {FLOOR_PLAN_ZONES.has(mapped.zone) ? (
+            // โซนอยู่ในห้องหลัก — โชว์ผังภาพชั้นวางจริงแทน chip ย่อ
+            <WarehouseFloorPlan activeZone={mapped.zone} />
+          ) : (
+            // โซนอยู่นอกห้อง (เช่น L, M, N, O) — ไม่มีในภาพผังห้องหลัก
+            <WarehouseMiniMap cells={mapCells} activeZone={mapped.zone} />
+          )}
+
+          {SHELF_ZONES.has(mapped.zone) ? (
+            <>
+              <div className="step-tag">
+                <i>2</i> เชลฟ์ที่ {mapped.aisle}
+                {mapped.slot != null ? ` · ชั้นที่ ${mapped.slot} (จากล่างขึ้นบน) ` : ''}
+              </div>
+              <ShelfFront zone={mapped.zone} shelf={mapped.aisle} slot={mapped.slot} />
+              <div className="sf-axis">
+                {/* โซน B, D, F, H, J นับเชลฟ์จากขวา ป้ายบอกทิศต้องสลับตาม */}
+                <span>
+                  {isMirroredZone(mapped.zone) ? 'เชลฟ์ที่ 1 อยู่ขวาสุด →' : '← เชลฟ์ที่ 1'}
+                </span>
+                <span>ชั้น 1 = นับจากล่างขึ้นบน</span>
+              </div>
+            </>
+          ) : (
+            // โซนไม่มี layout ชั้นวาง — ใช้ตารางย่อแบบเดิม
+            <WarehouseMap
+              cells={mapCells}
+              activeZone={mapped.zone}
+              activeAisle={mapped.aisle}
+              activeLabel={mapped.location}
+            />
+          )}
+        </>
+      )}
 
       {found.updated_by && (
         <div className="meta-small">
