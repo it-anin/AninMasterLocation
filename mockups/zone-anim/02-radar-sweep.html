@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 2 — เรดาร์กวาดหาทั่วคลัง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* เส้นกวาดจากซ้ายไปขวาทั้งคลัง แล้วหยุดค้างที่โซนเป้าหมาย
+     เล่าเรื่อง "กำลังค้นหา → เจอแล้ว" ได้ในตัว */
+  #sweep { animation: sweep 1.15s cubic-bezier(.4,0,.2,1) both; }
+  @keyframes sweep { from { transform: translateX(-1280px); } to { transform: translateX(0); } }
+  #band { animation: reveal .35s 1.05s both; transform-origin: center; }
+  @keyframes reveal { from { opacity: 0; transform: scaleY(.4); } to { opacity: 1; transform: scaleY(1); } }
+  #dim { animation: fade .4s 1.05s both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .sw { fill: url(#swg); }
+  .dim { fill: rgba(255,255,255,.74); }
+  .band { fill: rgba(4,120,87,.14); stroke: var(--ok); stroke-width: 3; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <defs>
+        <linearGradient id="swg" x1="0" x2="1">
+          <stop offset="0%"  stop-color="#059669" stop-opacity="0"/>
+          <stop offset="88%" stop-color="#059669" stop-opacity=".30"/>
+          <stop offset="100%" stop-color="#059669" stop-opacity=".9"/>
+        </linearGradient>
+      </defs>
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd"/>
+      <rect id="band" class="band" rx="6"/>
+      <rect id="sweep" class="sw" x="0" y="0" width="1280" height="417"/>
+    </svg>
+    <div class="note">
+      เส้นกวาดวิ่งผ่านทั้งคลังแล้วหยุดที่โซนเป้าหมาย
+      สื่อว่า "ระบบกำลังหา → เจอแล้ว" ในอนิเมชันเดียว
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone), pad = 6, x = a - pad, w = (b - a) + pad * 2;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} 0H${x + w}V${IMG_H}H${x}Z`);
+    const bd = document.getElementById('band');
+    bd.setAttribute('x', x); bd.setAttribute('y', 2);
+    bd.setAttribute('width', w); bd.setAttribute('height', IMG_H - 4);
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+    replay();
+  }
+  function replay() {
+    for (const id of ['sweep', 'band', 'dim']) {
+      const el = document.getElementById(id);
+      el.style.animation = 'none'; void el.getBoundingClientRect(); el.style.animation = '';
+    }
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(replay));
+</script>
+</body>
+</html>

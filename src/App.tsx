@@ -1,13 +1,19 @@
 import { useState } from 'react';
+import aninLogo from './assets/anin-logo.png';
 import { isAndroidMode, useScanFallback } from './lib/useScanner';
 import { getStaff, isLoggedIn, logout } from './lib/auth';
 import { isConfigured } from './lib/supabase';
 import { Login } from './screens/Login';
 import { PdaScan } from './screens/PdaScan';
 import { ProductTable } from './screens/ProductTable';
+import { DesktopSearch } from './screens/DesktopSearch';
+
+/** หน้าบน Desktop — PDA ไม่มีแท็บ เพราะมีหน้าเดียว */
+type Tab = 'search' | 'manage';
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn());
+  const [tab, setTab] = useState<Tab>('search');
 
   // listener ชั้น fallback สำหรับหน้าที่ไม่มี handler เฉพาะ
   useScanFallback();
@@ -28,7 +34,29 @@ export default function App() {
   return (
     <div className={isAndroidMode ? 'app app-pda' : 'app'}>
       <header className="topbar">
-        <span className="brand">📍 AninMaster Location</span>
+        <span className="brand">
+          {/* โลโก้เป็นคำว่า ANIN อยู่แล้ว ใส่ alt="" ไม่ให้ screen reader อ่านซ้ำกับข้อความข้างๆ */}
+          <img className="brand-logo" src={aninLogo} alt="" />
+          Master Location
+        </span>
+        {/* แท็บเฉพาะบน Desktop — โหมด PDA มีหน้าเดียว ไม่ต้องเลือก */}
+        {!isAndroidMode && (
+          <nav className="tabs-nav">
+            <button
+              className={tab === 'search' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+              onClick={() => setTab('search')}
+            >
+              ค้นหาตำแหน่ง
+            </button>
+            <button
+              className={tab === 'manage' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+              onClick={() => setTab('manage')}
+            >
+              จัดการข้อมูล
+            </button>
+          </nav>
+        )}
+
         <span className="spacer" />
         <span className="staff">👤 {getStaff()}</span>
         <button
@@ -42,7 +70,15 @@ export default function App() {
         </button>
       </header>
 
-      <main>{isAndroidMode ? <PdaScan /> : <ProductTable />}</main>
+      <main>
+        {isAndroidMode ? (
+          <PdaScan />
+        ) : tab === 'search' ? (
+          <DesktopSearch />
+        ) : (
+          <ProductTable />
+        )}
+      </main>
     </div>
   );
 }

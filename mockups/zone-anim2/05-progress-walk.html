@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 5 — ไอคอนคนเดินไปยังโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ไอคอนคนเดินจากประตูไปหยุดที่โซน แล้วโบกมือ
+     เข้าใจง่ายที่สุดโดยไม่ต้องอ่านตัวหนังสือเลย */
+  #guy { transition: transform 1.4s cubic-bezier(.33,0,.25,1); }
+  #guy.bob { animation: bob .42s ease-in-out 4; }
+  @keyframes bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+  #flag { opacity: 0; transition: opacity .3s 1.35s; }
+  #flag.on { opacity: 1; }
+  .g-body { fill: var(--ok); }
+  .g-head { fill: var(--ok); stroke: #fff; stroke-width: 3; }
+  .fl-p { fill: var(--ok); }
+  .fl-t { fill: #fff; font-weight: 800; text-anchor: middle;
+          dominant-baseline: central; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="flag"></g>
+      <g id="guy">
+        <circle class="g-head" cx="0" cy="-34" r="11"/>
+        <path class="g-body" d="M-9 -22 h18 l-3 24 h-5 l-1 20 h-5 l-1 -20 h-5 Z"/>
+      </g>
+    </svg>
+    <div class="note">
+      ไอคอนคนเดินจากประตูไปหยุดที่โซนแล้วกระโดดเบาๆ
+      เข้าใจได้ทันทีโดยไม่ต้องอ่านตัวหนังสือ เหมาะกับพนักงานทุกระดับ
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const DOOR_X = 597, WALK_Y = 352;
+  function draw() {
+    const guy = document.getElementById('guy');
+    const flag = document.getElementById('flag');
+    const cx = zoneMidX(zone);
+
+    // วางที่ประตูก่อน (ไม่มี transition) แล้วค่อยเดิน
+    guy.style.transition = 'none';
+    guy.classList.remove('bob');
+    guy.setAttribute('transform', `translate(${DOOR_X} ${WALK_Y})`);
+    flag.classList.remove('on');
+    void guy.getBoundingClientRect();
+
+    guy.style.transition = '';
+    guy.setAttribute('transform', `translate(${cx} ${WALK_Y})`);
+    setTimeout(() => guy.classList.add('bob'), 1400);
+    flag.innerHTML = `
+      <path class="fl-p" d="M${cx} ${RACK_BOTTOM - 4} v-52 h66 v34 h-66Z"/>
+      <text class="fl-t" x="${cx + 33}" y="${RACK_BOTTOM - 39}" font-size="26">${zone}</text>`;
+    flag.classList.add('on');
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

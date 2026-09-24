@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 2 — ตราประทับกระแทกลง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ตราประทับเอียงๆ กระแทกลงมาจากด้านหน้า แล้วสะเทือนนิดหน่อย
+     ให้ความรู้สึก "ยืนยันแล้ว" หนักแน่น */
+  #stamp {
+    animation: slam .42s cubic-bezier(.36,0,.25,1) both, shake .28s .42s ease-out both;
+    transform-box: fill-box; transform-origin: center;
+  }
+  @keyframes slam {
+    0%   { transform: scale(3.4) rotate(-22deg); opacity: 0; }
+    70%  { opacity: 1; }
+    100% { transform: scale(1) rotate(-9deg); opacity: 1; }
+  }
+  @keyframes shake {
+    0%,100% { translate: 0 0; }
+    30% { translate: -4px 2px; }
+    65% { translate: 3px -1px; }
+  }
+  .st-box { fill: none; stroke: #b91c1c; stroke-width: 7; }
+  .st-in  { fill: rgba(185,28,28,.10); }
+  .st-t   { fill: #b91c1c; font-weight: 800; text-anchor: middle;
+            dominant-baseline: central; font-family: system-ui, sans-serif; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="stamp"></g>
+    </svg>
+    <div class="note">
+      ตราประทับกระแทกลงมาเอียงๆ แล้วสะเทือน ให้ความรู้สึก "ยืนยันแล้ว" หนักแน่น
+      ใช้สีแดงตัดกับเขียวของระบบ จึงไม่กลืนกับ UI อื่น
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const cx = zoneMidX(zone), cy = (RACK_TOP + RACK_BOTTOM) / 2;
+    const w = Math.max(150, zoneW(zone) + 96), h = 108;
+    document.getElementById('stamp').innerHTML = `
+      <rect class="st-in"  x="${cx - w/2}" y="${cy - h/2}" width="${w}" height="${h}" rx="10"/>
+      <rect class="st-box" x="${cx - w/2}" y="${cy - h/2}" width="${w}" height="${h}" rx="10"/>
+      <text class="st-t" x="${cx}" y="${cy}" font-size="56">${zone}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+    replay();
+  }
+  function replay() {
+    const el = document.getElementById('stamp');
+    el.style.animation = 'none'; void el.getBoundingClientRect(); el.style.animation = '';
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(replay));
+</script>
+</body>
+</html>

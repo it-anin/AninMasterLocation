@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 7 — แน่น เห็นรายการล่าสุดพร้อมกัน</title>
+<style>
+  /* สำหรับคนที่สแกนรัวๆ — ผลลัพธ์ย่อ แต่เห็นของที่เพิ่งยิงไปหลายชิ้น */
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;
+        --ok:#22c55e;--accent:#38bdf8;--warn:#f59e0b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif;font-size:14px}
+  .pda{max-width:480px;margin:0 auto;padding:8px}
+  .scan{width:100%;padding:11px;border-radius:9px;border:1px solid var(--line);
+        background:#0b1219;color:var(--ink);font-size:15px}
+
+  .now{margin-top:8px;display:flex;gap:10px;align-items:center;
+       background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ok);
+       border-radius:10px;padding:10px}
+  .now .code{font-size:38px;font-weight:800;color:var(--ok);line-height:1;flex:none}
+  .now .txt{min-width:0}
+  .now .nm{font-size:14px;font-weight:600;line-height:1.3;
+           overflow:hidden;text-overflow:ellipsis;display:-webkit-box;
+           -webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .now .mt{font-size:11px;color:var(--dim);margin-top:3px}
+
+  /* แถบชั้นแนวนอนเล็กๆ — ซ้ายคือล่าง */
+  .mini{margin-top:8px;display:flex;gap:3px;align-items:flex-end;height:38px;
+        background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+  .mb{flex:1;background:#101a23;border:1px solid var(--line);border-radius:4px;
+      display:grid;place-items:end center;font-size:10px;color:var(--dim);padding-bottom:2px}
+  .mb.on{background:var(--ok);border-color:var(--ok);color:#04220f;font-weight:800}
+
+  .sect{margin-top:10px;font-size:11px;color:var(--dim);letter-spacing:1px}
+  .list{margin-top:5px;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        overflow:hidden}
+  .row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row .c{font-size:15px;font-weight:800;color:var(--ok);width:52px;flex:none}
+  .row .c.none{color:var(--warn);font-size:12px;font-weight:600}
+  .row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+  .btn{margin-top:10px;width:100%;padding:12px;border:0;border-radius:9px;
+       background:var(--accent);color:#04202b;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+
+  <div class="now">
+    <div class="code" id="code"></div>
+    <div class="txt">
+      <div class="nm" id="name"></div>
+      <div class="mt" id="meta"></div>
+    </div>
+  </div>
+
+  <div class="mini" id="mini"></div>
+
+  <div class="sect">ล่าสุด</div>
+  <div class="list" id="list"></div>
+
+  <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO;
+  document.getElementById('code').textContent = d.code;
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent =
+    `โซน ${d.zone} ชั้น ${d.shelf} ช่อง ${d.slot} · ${d.unit} · ${d.barcode}`;
+
+  const mini = document.getElementById('mini');
+  for (let s = 1; s <= SHELVES; s++) {
+    const b = document.createElement('div');
+    b.className = 'mb' + (s === d.shelf ? ' on' : '');
+    b.style.height = (38 + s * 7) + '%';
+    b.textContent = s;
+    mini.appendChild(b);
+  }
+
+  const recent = [
+    ['B23','วิตามินซี 1000 มก. เม็ดฟู่'],
+    ['F17','แอลกอฮอล์เจล 450 มล.'],
+    [null,'ผ้าก๊อซปราศจากเชื้อ 3x3'],
+    ['K52','หน้ากากอนามัย 50 ชิ้น/กล่อง'],
+  ];
+  document.getElementById('list').innerHTML = recent.map(([c,n]) =>
+    `<div class="row">
+       <div class="c${c?'':' none'}">${c ?? 'ยังไม่ระบุ'}</div>
+       <div class="n">${n}</div>
+     </div>`).join('');
+</script>
+</body>
+</html>

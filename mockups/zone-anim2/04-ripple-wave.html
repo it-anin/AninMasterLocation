@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 4 — คลื่นแผ่จากโซนออกไปทั้งคลัง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* กลับทิศจากแบบ "วงกระเพื่อม" เดิม — คราวนี้คลื่นเป็นแนวตั้ง
+     แผ่จากโซนออกไปสองข้าง ทำให้เห็นว่าโซนนี้คือ "จุดกำเนิด" */
+  .wv { fill: none; stroke: var(--ok); stroke-width: 5; }
+  .w1 { animation: spread 2s ease-out infinite; }
+  .w2 { animation: spread 2s .66s ease-out infinite; }
+  .w3 { animation: spread 2s 1.33s ease-out infinite; }
+  @keyframes spread {
+    0%   { transform: scaleX(.02); opacity: .9; }
+    100% { transform: scaleX(1);   opacity: 0; }
+  }
+  .core { fill: rgba(4,120,87,.16); stroke: var(--ok); stroke-width: 4; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      คลื่นแนวตั้งแผ่ออกจากโซนไปสองข้าง เห็นชัดว่าโซนนี้คือ "จุดกำเนิด"
+      ไม่ลดความสว่างภาพเลย ยังดูผังรวมได้ครบ
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone), pad = 6;
+    const cx = (a + b) / 2, w = (b - a) + pad * 2;
+    // scaleX ขยายจากกึ่งกลางโซน จึงต้องตั้ง transform-origin ที่ cx
+    const org = `transform-origin:${cx}px 209px`;
+    document.getElementById('mark').innerHTML = `
+      <rect class="wv w1" x="${cx - w/2}" y="4" width="${w}" height="${IMG_H - 8}" rx="8" style="${org}"/>
+      <rect class="wv w2" x="${cx - w/2}" y="4" width="${w}" height="${IMG_H - 8}" rx="8" style="${org}"/>
+      <rect class="wv w3" x="${cx - w/2}" y="4" width="${w}" height="${IMG_H - 8}" rx="8" style="${org}"/>
+      <rect class="core" x="${a - pad}" y="4" width="${w}" height="${IMG_H - 8}" rx="8"/>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

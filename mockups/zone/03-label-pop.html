@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 3 — ขยายป้ายโซนในภาพ</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ป้ายวงกลม A-K ถูก render ฝังมาในภาพ เปลี่ยนสีไม่ได้
+     แต่ "ครอบทับ" ด้วยวงใหม่ที่ใหญ่กว่าได้ — ชัดมากและไม่ยุ่งกับชั้นวางเลย */
+  .dim { fill: rgba(255,255,255,.7); }
+  .halo { fill: var(--ok); opacity: .18; }
+  .badge { fill: var(--ok); stroke: #fff; stroke-width: 4; }
+  .badge-t { fill: #fff; font-weight: 800; text-anchor: middle;
+             dominant-baseline: central; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <rect class="dim" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      ทั้งภาพจางลงเท่ากันหมด แล้วเน้นที่ "ป้ายโซน" อย่างเดียว
+      สายตาไปหยุดที่ตัวอักษรทันที — ไม่ต้องตีกรอบชั้นวางเลย
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const p = LABELS[zone];
+    document.getElementById('mark').innerHTML = `
+      <circle class="halo" cx="${p.x}" cy="${p.y}" r="64"/>
+      <circle class="badge" cx="${p.x}" cy="${p.y}" r="34"/>
+      <text class="badge-t" x="${p.x}" y="${p.y}" font-size="40">${zone}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

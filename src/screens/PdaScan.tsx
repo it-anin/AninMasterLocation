@@ -5,29 +5,27 @@ import {
   loadWarehouseMap,
   parseLocation,
   saveLocation,
+  searchSku,
   type LookupResult,
   type MapCell,
 } from '../lib/queries';
 import { getStaff } from '../lib/auth';
 import { EditLocationDialog } from '../components/EditLocationDialog';
-import { WarehouseMap } from '../components/WarehouseMap';
+import { LocationResult } from '../components/LocationResult';
 
 type State =
   | { kind: 'idle' }
   | { kind: 'loading'; barcode: string }
   | { kind: 'found'; data: LookupResult }
   | { kind: 'notfound'; barcode: string }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string }
+  | { kind: 'results'; q: string; rows: LookupResult[] };
 
-interface RecentEntry {
-  barcode: string;
-  name: string;
-  location: string | null;
-}
+/** จำนวนผลค้นหาสูงสุดที่แสดง — ต้องตรงกับค่าที่ส่งให้ searchSku */
+const SEARCH_LIMIT = 25;
 
 export function PdaScan() {
   const [state, setState] = useState<State>({ kind: 'idle' });
-  const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [editing, setEditing] = useState(false);
   const [mapCells, setMapCells] = useState<MapCell[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,27 +46,40 @@ export function PdaScan() {
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
+  /**
+   * ช่องเดียวรับทั้งบาร์โค้ดและ SKU — ระบบเดาเอง
+   *
+   * ลองหาบาร์โค้ดก่อนเสมอ เพราะเป็นงานหลักและต้องเร็วที่สุด
+   * ไม่เจอค่อยหา SKU ต่อ — แยกด้วยรูปแบบไม่ได้ เพราะ SKU กับบาร์โค้ดสั้นๆ
+   * หน้าตาเหมือนกัน (SKU 6 หลัก เช่น 900157 · บาร์โค้ดก็มีแบบสั้นเช่น 30031812)
+   */
   const handleScan = useCallback(
     async (raw: string) => {
-      const barcode = raw.trim();
-      if (!barcode) return;
+      const q = raw.trim();
+      if (!q) return;
 
-      setState({ kind: 'loading', barcode });
+      setState({ kind: 'loading', barcode: q });
       if (inputRef.current) inputRef.current.value = '';
 
       try {
-        const data = await lookupBarcode(barcode);
+        // 1. บาร์โค้ดก่อน
+        const data = await lookupBarcode(q);
         if (data) {
           setState({ kind: 'found', data });
-          setRecent((prev) =>
-            [
-              { barcode, name: data.name, location: data.location },
-              ...prev.filter((r) => r.barcode !== barcode),
-            ].slice(0, 8)
-          );
           beep(data.location ? 'ok' : 'warn');
+          focusInput();
+          return;
+        }
+
+        // 2. ไม่เจอ → ลองเป็น SKU
+        const rows = await searchSku(q, SEARCH_LIMIT);
+        if (rows.length === 1) {
+          setState({ kind: 'found', data: rows[0] });
+          beep(rows[0].location ? 'ok' : 'warn');
+        } else if (rows.length > 1) {
+          setState({ kind: 'results', q, rows });
         } else {
-          setState({ kind: 'notfound', barcode });
+          setState({ kind: 'notfound', barcode: q });
           beep('error');
         }
       } catch (e) {
@@ -80,6 +91,13 @@ export function PdaScan() {
     [focusInput]
   );
 
+  /** เลือกสินค้าจากผลค้นหา — ข้อมูลครบอยู่แล้วจาก searchSku ไม่ต้อง query ซ้ำ */
+  const pickResult = useCallback((row: LookupResult) => {
+    setState({ kind: 'found', data: row });
+    beep(row.location ? 'ok' : 'warn');
+  }, []);
+
+  // ปิดตัวสแกนตอนอยู่ในโหมดค้นหา ไม่งั้นการพิมพ์จะถูกดักเป็นบาร์โค้ด
   useScanner(handleScan, !editing);
 
   useEffect(() => {
@@ -102,8 +120,7 @@ export function PdaScan() {
       <input
         ref={inputRef}
         className="scan-input"
-        placeholder="ยิงบาร์โค้ดได้เลย"
-        inputMode="none"
+        placeholder="Barcode หรือ SKU"
         autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}
@@ -113,10 +130,51 @@ export function PdaScan() {
 
       <div className="result-area">
         {state.kind === 'idle' && (
-          <div className="hint">พร้อมสแกน — เล็งบาร์โค้ดที่กล่องสินค้าแล้วกดปุ่มยิง</div>
+          <div className="hint">
+            ยิงบาร์โค้ด หรือพิมพ์ SKU แล้วกด Enter
+            <br />
+            (พิมพ์ SKU ไม่ครบก็ได้ เช่น 1000)
+          </div>
         )}
 
         {state.kind === 'loading' && <div className="hint">กำลังค้นหา {state.barcode}…</div>}
+
+        {state.kind === 'results' && (
+          <div className="card">
+            {state.rows.length === 0 ? (
+              <>
+                <div className="card-title">ไม่พบสินค้า</div>
+                <div className="card-sub">ไม่มี SKU ที่ขึ้นต้นด้วย "{state.q}"</div>
+              </>
+            ) : (
+              <>
+                <div className="res-head">
+                  {/* searchSku จำกัด 25 แถว — ถ้าเต็มแปลว่าอาจมีมากกว่านี้
+                      บอกให้พิมพ์ SKU เพิ่ม ดีกว่าโชว์ตัวเลขที่ไม่ใช่ทั้งหมดจริง */}
+                  {state.rows.length >= SEARCH_LIMIT
+                    ? `แสดง ${SEARCH_LIMIT} รายการแรก — พิมพ์ SKU ให้ยาวขึ้นเพื่อแคบผลลัพธ์`
+                    : `พบ ${state.rows.length} รายการ — แตะเพื่อดูตำแหน่ง`}
+                </div>
+                {state.rows.map((r) => (
+                  <button
+                    key={r.item_id}
+                    type="button"
+                    className="res-row"
+                    onClick={() => pickResult(r)}
+                  >
+                    <span className="res-text">
+                      <span className="res-sku">{r.item_id}</span>
+                      <span className="res-name">{r.name}</span>
+                    </span>
+                    <span className={r.location ? 'res-loc' : 'res-loc res-loc-none'}>
+                      {r.location ?? 'ยังไม่ระบุ'}
+                    </span>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        )}
 
         {state.kind === 'error' && (
           <div className="card card-error">
@@ -136,71 +194,13 @@ export function PdaScan() {
         )}
 
         {found && (
-          <div className={`card ${found.location ? 'card-ok' : 'card-warn'}`}>
-            {found.location ? (
-              // แผนผังใช้ได้ต่อเมื่อรหัสแยกโซน/ชั้นออก (เช่น A-03)
-              // ถ้าเป็นข้อความอิสระ (เช่น "ตู้เย็น") ให้แสดงรหัสตัวใหญ่แทน
-              canMap(found, mapCells) ? (
-                <>
-                  <div className="loc-label">
-                    โซน {found.zone} — ชั้นที่ {found.aisle}
-                  </div>
-                  <WarehouseMap
-                    cells={mapCells}
-                    activeZone={found.zone}
-                    activeAisle={found.aisle}
-                    activeLabel={found.location}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="loc-label">ตำแหน่งจัดเก็บ</div>
-                  <div className="loc-value">{found.location}</div>
-                </>
-              )
-            ) : (
-              <div className="loc-missing">ยังไม่ได้ระบุตำแหน่ง</div>
-            )}
-
-            <div className="item-name">{found.name}</div>
-
-            {found.note && <div className="note">📝 {found.note}</div>}
-
-            <div className="meta">
-              {found.item_id}
-              {found.unit ? ` · ${found.unit}` : ''}
-            </div>
-            <div className="barcode-line">{found.barcode}</div>
-
-            {found.updated_by && (
-              <div className="meta-small">
-                แก้ไขล่าสุด: {found.updated_by}
-                {found.location_updated_at
-                  ? ` · ${new Date(found.location_updated_at).toLocaleDateString('th-TH')}`
-                  : ''}
-              </div>
-            )}
-
-            <button className="btn btn-primary" onClick={() => setEditing(true)}>
-              {found.location ? '✏️ แก้ไขตำแหน่ง' : '➕ กำหนดตำแหน่ง'}
-            </button>
-          </div>
+          <LocationResult
+            found={found}
+            mapCells={mapCells}
+            onEdit={() => setEditing(true)}
+          />
         )}
       </div>
-
-      {recent.length > 0 && (
-        <div className="recent">
-          <div className="recent-title">ล่าสุด</div>
-          {recent.map((r) => (
-            <div key={r.barcode} className="recent-row">
-              <span className="recent-name">{r.name}</span>
-              <span className={r.location ? 'recent-loc' : 'recent-loc recent-loc-none'}>
-                {r.location ?? 'ยังไม่ระบุ'}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
 
       {editing && found && (
         <EditLocationDialog
@@ -224,13 +224,11 @@ export function PdaScan() {
                 location: loc,
                 zone: parsed.zone,
                 aisle: parsed.aisle,
+                slot: parsed.slot,
                 note: note ?? null,
                 updated_by: getStaff(),
               },
             });
-            setRecent((prev) =>
-              prev.map((r) => (r.barcode === found.barcode ? { ...r, location: loc } : r))
-            );
             setEditing(false);
             refreshMap(); // ตำแหน่งใหม่อาจเป็นโซน/ชั้นที่ยังไม่เคยมีในผัง
             focusInput();
@@ -239,24 +237,6 @@ export function PdaScan() {
       )}
     </div>
   );
-}
-
-/**
- * ตัดสินว่าจะวาดผังหรือแสดงรหัสตัวใหญ่แทน
- *
- * ต้องครบ 2 อย่าง:
- *  1. รหัสแยกโซน/ชั้นออกได้ (zone + aisle ไม่ null)
- *  2. มีผังให้วาดจริง — ถ้าทั้งคลังมีอยู่ตำแหน่งเดียว ตารางช่องเดียวไม่มีประโยชน์
- *     สู้แสดงรหัสตัวใหญ่ชัดๆ ดีกว่า
- */
-function canMap(found: LookupResult, cells: MapCell[]): found is LookupResult & {
-  zone: string;
-  aisle: number;
-} {
-  if (!found.zone || found.aisle == null) return false;
-  const zones = new Set(cells.map((c) => c.zone));
-  zones.add(found.zone);
-  return cells.length >= 2 || zones.size >= 2;
 }
 
 /** เสียงตอบรับ — พนักงานไม่ต้องจ้องจอตอนสแกนต่อเนื่อง */

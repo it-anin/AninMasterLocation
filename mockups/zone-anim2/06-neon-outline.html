@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 6 — เส้นนีออนวิ่งรอบโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* เส้นเรืองแสงวิ่งวนรอบกรอบไม่หยุด — เหมือนไฟวิ่งป้ายร้าน
+     ใช้ stroke-dash วิ่ง จึงไม่กินแรงเครื่องเท่าการ re-render */
+  #run {
+    stroke-dasharray: 90 460;
+    animation: chase 2.4s linear infinite;
+    filter: drop-shadow(0 0 6px rgba(4,120,87,.9));
+  }
+  @keyframes chase { to { stroke-dashoffset: -550; } }
+  .base { fill: rgba(4,120,87,.10); stroke: rgba(4,120,87,.45); stroke-width: 3; }
+  .run  { fill: none; stroke: #10b981; stroke-width: 6; stroke-linecap: round; }
+  .dim  { fill: rgba(255,255,255,.62); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd"/>
+      <rect id="base" class="base" rx="8"/>
+      <rect id="run" class="run" rx="8"/>
+    </svg>
+    <div class="note">
+      เส้นเรืองแสงวิ่งวนรอบกรอบตลอดเวลา เหมือนไฟวิ่งป้ายร้าน
+      ใช้ stroke-dash วิ่ง จึงเบากว่าการวาดใหม่ทุกเฟรม
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone), pad = 7;
+    const x = a - pad, w = (b - a) + pad * 2, y = 4, h = IMG_H - 8;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} ${y}H${x + w}V${y + h}H${x}Z`);
+    for (const id of ['base', 'run']) {
+      const r = document.getElementById(id);
+      r.setAttribute('x', x); r.setAttribute('y', y);
+      r.setAttribute('width', w); r.setAttribute('height', h);
+    }
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

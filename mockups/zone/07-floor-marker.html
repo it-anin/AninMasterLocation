@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 7 — เครื่องหมายบนพื้นหน้าชั้น</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* วางเครื่องหมายบน "พื้น" หน้าชั้นวาง เหมือนสติกเกอร์ติดพื้นคลังจริง
+     พื้นเป็นระนาบเรียบ ไม่มีปัญหาขอบเอียงเหมือนตัวชั้นวาง */
+  .mark { fill: var(--ok); opacity: .9; }
+  .mark-t { fill: #fff; font-weight: 800; text-anchor: middle;
+            dominant-baseline: central; font-family: system-ui, sans-serif; }
+  .beam { fill: var(--ok); opacity: .13; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      เหมือนสติกเกอร์ติดพื้นหน้าชั้น — ตรงกับที่พนักงานเดินไปยืนจริง
+      พื้นเป็นระนาบเรียบ วาดทับแล้วดูเนียนกว่าวาดทับตัวชั้นวาง
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const cx = zoneMidX(zone);
+    const w = Math.max(60, zoneW(zone));
+    const y = RACK_BOTTOM + 22;     // บนพื้น ใต้ชั้นวางเล็กน้อย
+    document.getElementById('mark').innerHTML = `
+      <path class="beam" d="M${cx - w * 0.36} ${RACK_BOTTOM - 4}
+        L${cx + w * 0.36} ${RACK_BOTTOM - 4}
+        L${cx + w * 0.62} ${y + 20} L${cx - w * 0.62} ${y + 20}Z"/>
+      <ellipse class="mark" cx="${cx}" cy="${y}" rx="${w * 0.58}" ry="15"/>
+      <text class="mark-t" x="${cx}" y="${y}" font-size="21">${zone}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

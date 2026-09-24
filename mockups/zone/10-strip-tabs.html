@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 10 — แถบแท็บใต้ภาพ</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* แยกการไฮไลท์ออกจากภาพทั้งหมด — ภาพไว้ดูบรรยากาศ
+     แถบแท็บด้านล่างบอกโซนแทน ตรงเป๊ะเพราะเป็น HTML ธรรมดา */
+  .tabs { display: flex; gap: 3px; margin-top: 8px; }
+  .tab {
+    flex: 1; padding: 9px 2px; border-radius: 6px;
+    background: #eef3f8; border: 1px solid var(--line);
+    text-align: center; font-size: 13px; font-weight: 700; color: var(--dim);
+  }
+  .tab.on {
+    background: var(--ok); border-color: var(--ok); color: #fff;
+    box-shadow: 0 0 0 3px rgba(4,120,87,.18);
+  }
+  /* ขีดชี้ขึ้นไปหาภาพ ให้รู้ว่าแท็บนี้คือชั้นวางตัวไหน */
+  .ptr { height: 10px; margin-top: -1px; position: relative; }
+  .ptr i {
+    position: absolute; top: 0; width: 0; height: 0; transform: translateX(-50%);
+    border-left: 7px solid transparent; border-right: 7px solid transparent;
+    border-bottom: 9px solid var(--ok);
+  }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+    </svg>
+    <div class="ptr"><i id="ptr"></i></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="note">
+      ไม่วาดทับภาพเลยสักเส้น — ภาพไว้ดูบรรยากาศคลัง
+      ส่วนการบอกโซนใช้แถบแท็บ HTML ซึ่งตรงเป๊ะเสมอ
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    document.getElementById('tabs').innerHTML =
+      ZONES.map(z => `<div class="tab${z === zone ? ' on' : ''}">${z}</div>`).join('');
+    // ลูกศรชี้ขึ้นไปตรงกับตำแหน่งโซนในภาพ (คิดเป็น % ของความกว้างภาพ)
+    document.getElementById('ptr').style.left = (zoneMidX(zone) / IMG_W * 100) + '%';
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

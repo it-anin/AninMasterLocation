@@ -10,8 +10,10 @@ export interface LookupResult {
   location: string | null;
   /** โซน แยกอัตโนมัติจาก location — null ถ้ารหัสไม่เข้ารูปแบบ <ตัวอักษร><ตัวเลข> */
   zone: string | null;
-  /** ชั้น แยกอัตโนมัติจาก location */
+  /** ชั้น แยกอัตโนมัติจาก location (1 = ล่างสุด) */
   aisle: number | null;
+  /** ช่องในชั้น แยกอัตโนมัติจาก location — null ถ้ารหัสไม่มีหลักช่อง */
+  slot: number | null;
   note: string | null;
   updated_by: string | null;
   location_updated_at: string | null;
@@ -21,24 +23,48 @@ export interface LookupResult {
 export interface MapCell {
   zone: string;
   aisle: number;
+  slot: number | null;
   item_count: number;
 }
 
 /**
- * แยกโซน/ชั้นจากรหัสตำแหน่ง
+ * แยกโซน/ชั้น/ช่อง จากรหัสตำแหน่ง
  *
- * ⚠️ ต้องให้ผลตรงกับ generated column ใน 0001_schema.sql เป๊ะๆ
+ * ⚠️ ต้องให้ผลตรงกับ generated column ใน 0004_shelf_slot.sql เป๊ะๆ (กฎเหล็กข้อ 6)
  *    ถ้าแก้ regex ที่นี่ ต้องแก้ใน SQL ด้วย ไม่งั้นผังจะไฮไลท์ผิดช่อง
- *    รูปแบบที่อ่านออก: A-03 · A03 · a-3 · B 11 · C_02 · AA-12 · A-03-2
+ *
+ * รูปแบบที่อ่านออก:
+ *   J61   → โซน J ชั้น 6 ช่อง 1   (รูปแบบหลักของคลัง — เลข 2 หลักติดกัน)
+ *   A-03  → โซน A ชั้น 3 ช่อง null (รูปแบบเดิม ยังรองรับ)
+ *
+ * อ่านไม่ออก → null ทั้งหมด (PRE · COOL · L1 · กล่อง)
+ * แล้วหน้าจอ fallback ไปแสดงรหัสตัวใหญ่ — ไม่ใช่ error
  */
 export function parseLocation(location: string | null): {
   zone: string | null;
   aisle: number | null;
+  slot: number | null;
 } {
-  if (!location) return { zone: null, aisle: null };
-  const m = /^\s*([A-Za-z]+)\s*[-_ ]?\s*(\d+)/.exec(location);
-  if (!m) return { zone: null, aisle: null };
-  return { zone: m[1].toUpperCase(), aisle: parseInt(m[2], 10) };
+  const none = { zone: null, aisle: null, slot: null };
+  if (!location) return none;
+
+  // เลข 2 หลักติดกัน = ชั้น + ช่อง
+  const two = /^\s*([A-Za-z]+)\s*(\d)(\d)\s*$/.exec(location);
+  if (two) {
+    return {
+      zone: two[1].toUpperCase(),
+      aisle: parseInt(two[2], 10),
+      slot: parseInt(two[3], 10),
+    };
+  }
+
+  // มีตัวคั่น = ชั้นอย่างเดียว (รูปแบบเดิม)
+  const sep = /^\s*([A-Za-z]+)\s*[-_ ]\s*(\d+)\s*$/.exec(location);
+  if (sep) {
+    return { zone: sep[1].toUpperCase(), aisle: parseInt(sep[2], 10), slot: null };
+  }
+
+  return none;
 }
 
 export interface SearchRow {
@@ -81,6 +107,40 @@ export async function lookupBarcode(barcode: string): Promise<LookupResult | nul
 }
 
 /**
+ * ค้นหาด้วย SKU (item_id) แบบขึ้นต้นด้วย — พิมพ์ 1000 เจอ 100008, 100011, …
+ *
+ * ⚠️ ไม่จำกัดเฉพาะตัวเลข 6 หลัก แม้ SKU ส่วนใหญ่ (6,309 ตัว) จะเป็นแบบนั้น
+ *    เพราะอีก 1,649 ตัวมีตัวอักษรปน (A001, S00126, D0037) ซึ่งเป็นสินค้าจริง
+ *    ถ้ากรองเฉพาะตัวเลขจะหาสินค้าพวกนี้ไม่เจอเลย (กฎเหล็กข้อ 4 แนวเดียวกัน)
+ *
+ * ใช้ view เดียวกับตอนสแกน จึงได้ zone/aisle/slot มาครบเลย ไม่ต้อง query ซ้ำ
+ * สินค้าตัวเดียวมีหลายบาร์โค้ด — dedupe ด้วย item_id ฝั่ง client
+ */
+export async function searchSku(sku: string, limit = 25): Promise<LookupResult[]> {
+  const q = sku.trim();
+  if (!q) return [];
+
+  const { data, error } = await supabase
+    .from('v_barcode_lookup')
+    .select('*')
+    .like('item_id', `${q}%`)
+    .order('item_id')
+    .limit(limit * 4); // เผื่อแถวซ้ำจากหลายบาร์โค้ด
+
+  if (error) throw new Error(error.message);
+
+  const seen = new Set<string>();
+  const out: LookupResult[] = [];
+  for (const row of (data ?? []) as LookupResult[]) {
+    if (seen.has(row.item_id)) continue;
+    seen.add(row.item_id);
+    out.push(row);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * ผังคลังทั้งหมด — สร้างจากตำแหน่งที่กรอกเข้ามาจริง ไม่ต้องตั้งค่าล่วงหน้า
  * ช่วงแรกที่ยังไม่มีข้อมูลจะได้ array ว่าง หน้าจอจะ fallback ไปแสดงรหัสตัวใหญ่
  */
@@ -96,12 +156,15 @@ export async function searchItems(opts: {
   onlyMissing?: boolean;
   limit?: number;
   offset?: number;
+  /** กรองเฉพาะโซนนี้ — null/'' = ทุกโซน (ต้องรัน 0005_search_by_zone.sql ก่อน) */
+  zone?: string | null;
 }): Promise<SearchRow[]> {
   const { data, error } = await supabase.rpc('search_items', {
     q: opts.q ?? '',
     only_missing: opts.onlyMissing ?? false,
     lim: opts.limit ?? 50,
     off: opts.offset ?? 0,
+    zone_filter: opts.zone ?? null,
   });
   if (error) throw new Error(error.message);
   return (data ?? []) as SearchRow[];

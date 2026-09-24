@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 8 — ผังลายเส้น ไม่ใช้ภาพถ่าย</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ทิ้งภาพถ่ายไปเลย วาดผังเองเป็นบล็อกสี่เหลี่ยม
+     ควบคุมได้ 100% ไม่มีคำว่า "ไม่ตรง" เพราะไม่ได้ทาบกับภาพอะไร */
+  .room { fill: #eef3f8; stroke: var(--line); stroke-width: 3; }
+  .rack { fill: #cbd5e1; }
+  .rack.on { fill: var(--ok); }
+  .rk-t { fill: var(--dim); font-size: 26px; font-weight: 800;
+          text-anchor: middle; font-family: system-ui, sans-serif; }
+  .rk-t.on { fill: var(--ok); }
+  .door { fill: none; stroke: var(--dim); stroke-width: 3; stroke-dasharray: 6 5; }
+  .door-t { fill: var(--dim); font-size: 20px; text-anchor: middle;
+            font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" id="plan" viewBox="0 0 600 300" role="img" aria-label="ผังคลังลายเส้น"></svg>
+    <div class="note">
+      วาดผังเองทั้งหมด ไม่ใช้ภาพถ่าย — คุมตำแหน่งได้เป๊ะ 100%
+      แลกกับความสมจริงที่หายไป แต่ "ตรง" แน่นอนทุกโซน
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  // จัดกลุ่มตามผังจริง: A เดี่ยว · ที่เหลือเป็นคู่
+  const GROUPS = [['A'], ['B','C'], ['D','E'], ['F','G'], ['H','I'], ['J','K']];
+  function draw() {
+    const W = 600, H = 300, m = 22;
+    let s = `<rect class="room" x="${m}" y="${m}" width="${W - m * 2}" height="${H - m * 2}" rx="8"/>`;
+    const innerW = W - m * 2 - 40, x0 = m + 20;
+    const gapG = 14, rackW = 20;
+    // ความกว้างรวมของทุกกลุ่ม
+    const totalRacks = GROUPS.reduce((n, g) => n + g.length, 0);
+    const slotW = (innerW - gapG * (GROUPS.length - 1)) / totalRacks;
+    let x = x0;
+    for (const g of GROUPS) {
+      for (const z of g) {
+        const on = z === zone;
+        const cx = x + slotW / 2;
+        s += `<rect class="rack${on ? ' on' : ''}" x="${cx - rackW / 2}" y="${m + 40}"
+                width="${rackW}" height="${H - m * 2 - 70}" rx="4"/>`;
+        s += `<text class="rk-t${on ? ' on' : ''}" x="${cx}" y="${m + 30}">${z}</text>`;
+        x += slotW;
+      }
+      x += gapG;
+    }
+    s += `<path class="door" d="M${W / 2 - 30} ${H - m} h60"/>`;
+    s += `<text class="door-t" x="${W / 2}" y="${H - 4}">ทางเข้า</text>`;
+    document.getElementById('plan').innerHTML = s;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

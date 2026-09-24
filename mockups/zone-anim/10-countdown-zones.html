@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 10 — ไล่ดับทีละโซนจนเหลือโซนเดียว</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* เริ่มจากทุกโซนสว่างเท่ากัน แล้วไล่ "ดับ" โซนที่ไม่ใช่ทีละอัน
+     จนเหลือโซนเดียว — เล่าเรื่องการคัดกรองให้เห็นกับตา */
+  .zbox { fill: rgba(255,255,255,.82); opacity: 0; transition: opacity .16s linear; }
+  .zbox.off { opacity: 1; }
+  #win { opacity: 0; transition: opacity .35s ease-out .1s; }
+  #win.on { opacity: 1; }
+  .win-b { fill: rgba(4,120,87,.14); stroke: var(--ok); stroke-width: 4; }
+  .win-t { fill: #fff; font-weight: 800; text-anchor: middle;
+           dominant-baseline: central; font-family: system-ui, sans-serif; }
+  .win-c { fill: var(--ok); stroke: #fff; stroke-width: 3; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="boxes"></g>
+      <g id="win"></g>
+    </svg>
+    <div class="note">
+      ทุกโซนสว่างเท่ากันตอนเริ่ม แล้วไล่ดับโซนที่ไม่ใช่ทีละอันจนเหลือโซนเดียว
+      เห็นกระบวนการคัดกรองกับตา จำตำแหน่งได้แม่นขึ้น
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone, timers = [];
+  // กล่องคลุมรายโซน สร้างครั้งเดียว
+  document.getElementById('boxes').innerHTML = ZONES.map(z => {
+    const [a, b] = zx(z), pad = 5;
+    return `<rect class="zbox" data-z="${z}" x="${a - pad}" y="0"
+             width="${(b - a) + pad * 2}" height="${IMG_H}"/>`;
+  }).join('');
+
+  function draw() {
+    timers.forEach(clearTimeout); timers = [];
+    const boxes = [...document.querySelectorAll('.zbox')];
+    boxes.forEach(b => b.classList.remove('off'));
+    document.getElementById('win').classList.remove('on');
+
+    // ไล่ดับโซนที่ไม่ใช่ ทีละอันจากซ้ายไปขวา
+    const others = ZONES.filter(z => z !== zone);
+    others.forEach((z, i) => {
+      timers.push(setTimeout(() => {
+        boxes.find(b => b.dataset.z === z)?.classList.add('off');
+      }, 90 + i * 85));
+    });
+
+    const [a, b] = zx(zone), pad = 6;
+    const cx = (a + b) / 2;
+    document.getElementById('win').innerHTML = `
+      <rect class="win-b" x="${a - pad}" y="2" width="${(b - a) + pad * 2}" height="${IMG_H - 4}" rx="6"/>
+      <circle class="win-c" cx="${cx}" cy="${LABELS[zone].y}" r="28"/>
+      <text class="win-t" x="${cx}" y="${LABELS[zone].y}" font-size="34">${zone}</text>`;
+    timers.push(setTimeout(() => document.getElementById('win').classList.add('on'),
+      90 + others.length * 85));
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

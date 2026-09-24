@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "import": "node scripts/import-catalog.mjs",
-    "import:dry": "node scripts/import-catalog.mjs --dry-run"
+    "import:dry": "node scripts/import-catalog.mjs --dry-run",
+    "import:locations": "node scripts/import-locations.mjs",
+    "import:locations:dry": "node scripts/import-locations.mjs --dry-run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 1 — หมุดปักลงบนโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ไม่แตะตัวชั้นวางเลย — ปักหมุดชี้ลงมาจากด้านบน
+     ปัญหาขอบเอียงจึงไม่เกี่ยวข้องตั้งแต่แรก */
+  .pin-stem { stroke: var(--ok); stroke-width: 4; }
+  .pin-head { fill: var(--ok); }
+  .pin-txt { fill: #fff; font-weight: 800; text-anchor: middle;
+             font-family: system-ui, sans-serif; }
+  .pin-dot { fill: var(--ok); stroke: #fff; stroke-width: 3; }
+  .pin-ring { fill: none; stroke: var(--ok); stroke-width: 3; opacity: .35; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" id="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="pin"></g>
+    </svg>
+    <div class="note">
+      หมุดปักชี้ลงตรงหัวชั้นวาง — ไม่ต้องวาดกรอบครอบตัวชั้นวาง
+      จึงไม่มีปัญหาขอบเกิน/ขาดจาก perspective
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const cx = zoneMidX(zone);
+    const boxW = 132, boxH = 46, boxY = 92;
+    const tipY = RACK_TOP + 26;
+    document.getElementById('pin').innerHTML = `
+      <line class="pin-stem" x1="${cx}" y1="${boxY + boxH}" x2="${cx}" y2="${tipY}"/>
+      <circle class="pin-ring" cx="${cx}" cy="${tipY}" r="17"/>
+      <circle class="pin-dot" cx="${cx}" cy="${tipY}" r="9"/>
+      <rect class="pin-head" x="${cx - boxW / 2}" y="${boxY}" width="${boxW}" height="${boxH}" rx="10"/>
+      <text class="pin-txt" x="${cx}" y="${boxY + 34}" font-size="34">${zone}${DEMO.shelf}${DEMO.slot}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

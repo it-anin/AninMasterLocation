@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 5 — ไฟสปอตเลื่อนไปหาโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ไฟสปอตเริ่มกลางคลังแล้วเลื่อนไปหยุดที่โซน
+     ใช้ CSS transition กับ cx จึงเลื่อนนุ่มโดยไม่ต้องคำนวณเฟรมเอง */
+  #hole, #glow { transition: cx 1s cubic-bezier(.4,0,.2,1), rx .8s ease; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <defs>
+        <radialGradient id="soft">
+          <stop offset="55%" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity=".82"/>
+        </radialGradient>
+        <mask id="spot">
+          <rect x="0" y="0" width="1280" height="417" fill="#fff"/>
+          <ellipse id="hole" fill="#000"/>
+        </mask>
+      </defs>
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <rect x="0" y="0" width="1280" height="417" fill="rgba(255,255,255,.8)" mask="url(#spot)"/>
+      <ellipse id="glow" fill="url(#soft)"/>
+    </svg>
+    <div class="note">
+      ไฟสปอตเริ่มกลางคลังแล้วเลื่อนไปหยุดที่โซน
+      ตาไล่ตามลำแสงไปเอง ขอบไฟเบลอจึงไม่มีปัญหากรอบไม่ตรง
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const cy = (RACK_TOP + RACK_BOTTOM) / 2, ry = 150;
+  function setSpot(cx, rx) {
+    for (const id of ['hole', 'glow']) {
+      const e = document.getElementById(id);
+      e.setAttribute('cx', cx); e.setAttribute('cy', cy);
+      e.setAttribute('rx', rx); e.setAttribute('ry', ry);
+    }
+  }
+  function draw() {
+    // เริ่มกลางจอ กว้างๆ แล้วค่อยเลื่อน+หุบเข้าหาโซน
+    setSpot(IMG_W / 2, 300);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setSpot(zoneMidX(zone), Math.max(58, zoneW(zone) * 0.85));
+    }));
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

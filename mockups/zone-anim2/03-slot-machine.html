@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 3 — ตัวอักษรหมุนแบบสล็อต</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ป้ายโซนหมุนไล่ A→K แล้วค่อยๆ ช้าลงจนหยุดที่ตัวที่ใช่
+     ดึงสายตาไปที่ "ตัวอักษร" ซึ่งเป็นสิ่งที่ต้องจำจริงๆ */
+  .reel { position: relative; height: 92px; overflow: hidden;
+          background: var(--ok); border-radius: 12px; margin-top: 8px; }
+  .reel ul { list-style: none; margin: 0; padding: 0; position: absolute;
+             left: 0; right: 0; transition: transform 1.25s cubic-bezier(.16,.84,.26,1); }
+  .reel li { height: 92px; display: grid; place-items: center;
+             font-size: 56px; font-weight: 800; color: #fff; font-family: system-ui, sans-serif; }
+  .reel::before, .reel::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 26px; z-index: 2; pointer-events: none;
+  }
+  .reel::before { top: 0; background: linear-gradient(rgba(4,120,87,.95), transparent); }
+  .reel::after  { bottom: 0; background: linear-gradient(transparent, rgba(4,120,87,.95)); }
+  .dim { fill: rgba(255,255,255,.66); }
+  .band { fill: rgba(4,120,87,.14); stroke: var(--ok); stroke-width: 3; }
+  #band, #dim { transition: opacity .3s 1.05s; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <div class="reel"><ul id="reel"></ul></div>
+    <svg class="plan" viewBox="0 0 1280 417" style="margin-top:8px" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd"/>
+      <rect id="band" class="band" rx="6"/>
+    </svg>
+    <div class="note">
+      ตัวอักษรหมุนไล่ A→K แล้วช้าลงจนหยุดที่ตัวที่ใช่ พร้อมผังไฮไลท์ตาม
+      ดึงสายตาไปที่ "ตัวอักษร" ซึ่งเป็นสิ่งที่พนักงานต้องจำไปหาของ
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const reel = document.getElementById('reel');
+  // วนรายการ 3 รอบ ให้หมุนได้หลายรอบก่อนหยุด
+  reel.innerHTML = [...ZONES, ...ZONES, ...ZONES].map(z => `<li>${z}</li>`).join('');
+
+  function draw() {
+    const i = ZONES.indexOf(zone) + ZONES.length * 2;   // หยุดที่รอบสุดท้าย
+    reel.style.transition = 'none';
+    reel.style.transform = 'translateY(0)';
+    void reel.getBoundingClientRect();
+    reel.style.transition = '';
+    reel.style.transform = `translateY(-${i * 92}px)`;
+
+    const [a, b] = zx(zone), pad = 6, x = a - pad, w = (b - a) + pad * 2;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} 0H${x + w}V${IMG_H}H${x}Z`);
+    const bd = document.getElementById('band');
+    bd.setAttribute('x', x); bd.setAttribute('y', 2);
+    bd.setAttribute('width', w); bd.setAttribute('height', IMG_H - 4);
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

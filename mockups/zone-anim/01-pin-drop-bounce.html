@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 1 — หมุดหล่นลงมาเด้ง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* หมุดหล่นจากนอกจอลงมาเด้ง — ตาไล่ตามการเคลื่อนไหวไปหยุดตรงโซนพอดี */
+  #pin { animation: drop .55s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes drop {
+    0%   { transform: translateY(-190px); opacity: 0; }
+    60%  { opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  /* คลื่นกระเพื่อมตอนหมุดกระแทก */
+  #ripple { animation: ripple .7s .5s ease-out both; transform-origin: center; }
+  @keyframes ripple {
+    0%   { r: 8; opacity: .85; }
+    100% { r: 46; opacity: 0; }
+  }
+  .pin-stem { stroke: var(--ok); stroke-width: 4; }
+  .pin-head { fill: var(--ok); }
+  .pin-txt { fill: #fff; font-weight: 800; text-anchor: middle; font-family: system-ui, sans-serif; }
+  .pin-dot { fill: var(--ok); stroke: #fff; stroke-width: 3; }
+  .rip { fill: none; stroke: var(--ok); stroke-width: 4; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <circle id="ripple" class="rip"/>
+      <g id="pin"></g>
+    </svg>
+    <div class="note">
+      หมุดหล่นจากด้านบนลงมาเด้ง แล้วมีคลื่นกระเพื่อมตอนกระแทก
+      ตาไล่ตามการเคลื่อนไหวไปหยุดตรงโซนพอดี
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const cx = zoneMidX(zone);
+    const boxW = 132, boxH = 46, boxY = 92, tipY = RACK_TOP + 26;
+    document.getElementById('pin').innerHTML = `
+      <line class="pin-stem" x1="${cx}" y1="${boxY + boxH}" x2="${cx}" y2="${tipY}"/>
+      <circle class="pin-dot" cx="${cx}" cy="${tipY}" r="9"/>
+      <rect class="pin-head" x="${cx - boxW/2}" y="${boxY}" width="${boxW}" height="${boxH}" rx="10"/>
+      <text class="pin-txt" x="${cx}" y="${boxY + 34}" font-size="34">${zone}${DEMO.shelf}${DEMO.slot}</text>`;
+    const r = document.getElementById('ripple');
+    r.setAttribute('cx', cx); r.setAttribute('cy', tipY);
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+    replay();
+  }
+  /** รีสตาร์ท CSS animation — ต้อง reflow คั่น ไม่งั้นเบราว์เซอร์ข้ามให้ */
+  function replay() {
+    for (const el of [document.getElementById('pin'), document.getElementById('ripple')]) {
+      el.style.animation = 'none';
+      void el.getBoundingClientRect();
+      el.style.animation = '';
+    }
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(replay));
+</script>
+</body>
+</html>

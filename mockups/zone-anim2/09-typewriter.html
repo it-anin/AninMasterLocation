@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 9 — พิมพ์รหัสทีละตัว</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* พิมพ์รหัสทีละหลัก พร้อมไฮไลท์ผังไล่ตามทีละขั้น
+     โซน → เชลฟ์ → ชั้น ทำให้เข้าใจว่าแต่ละหลักหมายถึงอะไร */
+  .tw { font-family: 'Consolas', ui-monospace, monospace;
+        font-size: 64px; font-weight: 800; color: var(--ok);
+        letter-spacing: 6px; min-height: 76px; }
+  .tw .cur { animation: blink .9s steps(1) infinite; color: var(--ok); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .steps { display: flex; gap: 6px; margin: 6px 0 4px; }
+  .st { flex: 1; padding: 7px 4px; border-radius: 7px; text-align: center;
+        background: #eef3f8; border: 1px solid var(--line);
+        font-size: 11px; color: var(--dim); font-weight: 600;
+        transition: background .25s, color .25s, border-color .25s; }
+  .st.on { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .dim { fill: rgba(255,255,255,.66); transition: opacity .3s; }
+  .band { fill: rgba(4,120,87,.14); stroke: var(--ok); stroke-width: 3;
+          opacity: 0; transition: opacity .3s; }
+  .band.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="tw" id="tw"></div>
+  <div class="steps">
+    <div class="st" id="s1">โซน</div>
+    <div class="st" id="s2">เชลฟ์</div>
+    <div class="st" id="s3">ชั้น</div>
+  </div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd" opacity="0"/>
+      <rect id="band" class="band" rx="6"/>
+    </svg>
+    <div class="note">
+      พิมพ์รหัสทีละหลัก พร้อมไฮไลท์ไล่ตามทีละขั้น (โซน → เชลฟ์ → ชั้น)
+      ช่วยให้พนักงานใหม่เข้าใจว่าแต่ละหลักของรหัสหมายถึงอะไร
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone, timers = [];
+  function draw() {
+    timers.forEach(clearTimeout); timers = [];
+    const code = zone + DEMO.shelf + DEMO.slot;
+    const tw = document.getElementById('tw');
+    const steps = ['s1', 's2', 's3'].map(id => document.getElementById(id));
+    steps.forEach(s => s.classList.remove('on'));
+
+    const [a, b] = zx(zone), pad = 6, x = a - pad, w = (b - a) + pad * 2;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} 0H${x + w}V${IMG_H}H${x}Z`);
+    const bd = document.getElementById('band');
+    bd.setAttribute('x', x); bd.setAttribute('y', 2);
+    bd.setAttribute('width', w); bd.setAttribute('height', IMG_H - 4);
+    bd.classList.remove('on');
+    document.getElementById('dim').setAttribute('opacity', '0');
+
+    tw.innerHTML = '<span class="cur">_</span>';
+    for (let i = 0; i < code.length; i++) {
+      timers.push(setTimeout(() => {
+        tw.innerHTML = code.slice(0, i + 1) + '<span class="cur">_</span>';
+        steps[i]?.classList.add('on');
+        if (i === 0) {   // พิมพ์ตัวโซนเสร็จ → ไฮไลท์ผัง
+          document.getElementById('dim').setAttribute('opacity', '1');
+          bd.classList.add('on');
+        }
+      }, 420 + i * 460));
+    }
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

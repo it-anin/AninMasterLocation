@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 4 — ผังบน + ชั้นล่าง (2 ขั้น)</title>
+<style>
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;
+        --ok:#22c55e;--accent:#38bdf8;--scrim:rgba(0,0,0,.68)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+  .scan{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);
+        background:#0b1219;color:var(--ink);font-size:16px}
+
+  /* เล่าเป็น 2 ขั้น: ขั้น 1 ไปโซนไหน · ขั้น 2 ชั้น/ช่องไหน */
+  .step{margin-top:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;overflow:hidden}
+  .step-h{display:flex;align-items:center;gap:8px;padding:9px 11px;
+          background:#101a23;border-bottom:1px solid var(--line)}
+  .step-h i{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#04202b;
+            display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700}
+  .step-h b{font-size:13px;font-weight:600}
+  .step-h em{margin-left:auto;font-style:normal;font-size:20px;font-weight:800;color:var(--ok)}
+  .step-b{padding:10px}
+
+  svg.plan{display:block;width:100%;height:auto;border-radius:6px}
+  .scrim{fill:var(--scrim)}
+
+  .grid{display:grid;gap:4px}
+  .srow{display:flex;gap:4px;align-items:center}
+  .srow .n{width:24px;height:30px;flex:none;border-radius:5px;display:grid;place-items:center;
+           font-size:13px;font-weight:700;background:#101a23;border:1px solid var(--line);color:var(--dim)}
+  .srow .cs{flex:1;display:flex;gap:4px}
+  .c{flex:1;height:30px;border-radius:5px;background:#101a23;border:1px solid var(--line);
+     display:grid;place-items:center;font-size:10px;color:#5c7183}
+  .srow.on .n{background:var(--ok);border-color:var(--ok);color:#04220f}
+  .srow.on .c{border-color:#2f6b45}
+  .c.hit{background:var(--ok);border-color:var(--ok);color:#04220f;font-weight:800;font-size:11px}
+
+  .foot{margin-top:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;padding:12px}
+  .name{font-size:17px;font-weight:600;line-height:1.35}
+  .meta{margin-top:6px;font-size:12px;color:var(--dim)}
+  .btn{margin-top:10px;width:100%;padding:13px;border:0;border-radius:10px;
+       background:var(--accent);color:#04202b;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+
+  <div class="step">
+    <div class="step-h"><i>1</i><b>เดินไปโซน</b><em id="z"></em></div>
+    <div class="step-b">
+      <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+        <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+        <path id="scrim" class="scrim" fill-rule="evenodd"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-h"><i>2</i><b>หาชั้นและช่อง</b><em id="c2"></em></div>
+    <div class="step-b"><div class="grid" id="grid"></div></div>
+  </div>
+
+  <div class="foot">
+    <div class="name" id="name"></div>
+    <div class="meta" id="meta"></div>
+    <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO;
+  document.getElementById('z').textContent = d.zone;
+  document.getElementById('c2').textContent = d.code;
+  document.getElementById('scrim').setAttribute('d', scrimPath(ZONE_BY_ID[d.zone]));
+
+  const g = document.getElementById('grid');
+  const n = slotsOf(d.zone);
+  for (let s = SHELVES; s >= 1; s--) {          // บนลงล่าง
+    const on = s === d.shelf;
+    const cs = Array.from({length:n}, (_,i) => {
+      const hit = on && i+1 === d.slot;
+      return `<div class="c${hit?' hit':''}">${hit ? d.code : i+1}</div>`;
+    }).join('');
+    const r = document.createElement('div');
+    r.className = 'srow' + (on ? ' on' : '');
+    r.innerHTML = `<div class="n">${s}</div><div class="cs">${cs}</div>`;
+    g.appendChild(r);
+  }
+
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent = `${d.item_id} · ${d.unit} · ${d.barcode}`;
+</script>
+</body>
+</html>

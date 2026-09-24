@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 10 — ตารางทั้งคลัง (เห็นทุกโซนพร้อมกัน)</title>
+<style>
+  /* ไม่ใช้ภาพเลย — เห็นทั้งคลังในตารางเดียว เหมาะกับคนที่จำผังได้แล้ว
+     และใช้เทียบได้ว่าโซนไหนชั้นไหนยังว่าง */
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;
+        --ok:#22c55e;--accent:#38bdf8;--fill:#1d2b38}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+  .scan{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);
+        background:#0b1219;color:var(--ink);font-size:16px}
+  .card{margin-top:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;padding:12px}
+  .head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+  .head b{font-size:44px;color:var(--ok);line-height:1}
+  .head span{font-size:12px;color:var(--dim)}
+
+  .wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:3px;min-width:100%}
+  th,td{padding:0}
+  th.z{font-size:12px;color:var(--dim);font-weight:700;height:22px;min-width:30px}
+  th.s{font-size:12px;color:var(--dim);font-weight:700;width:26px;text-align:right;
+       padding-right:5px}
+  td .cell{height:26px;min-width:30px;border-radius:5px;background:var(--fill);
+           border:1px solid var(--line);display:grid;place-items:center;
+           font-size:10px;color:#64798c}
+  td .cell.on{background:var(--ok);border-color:var(--ok);color:#04220f;font-weight:800;
+              box-shadow:0 0 0 2px rgba(34,197,94,.3)}
+  td .cell.colhl{border-color:#2f6b45}
+  .capt{margin-top:8px;font-size:11px;color:var(--dim);display:flex;justify-content:space-between}
+
+  .name{margin-top:12px;font-size:17px;font-weight:600;line-height:1.35}
+  .meta{margin-top:6px;font-size:12px;color:var(--dim)}
+  .btn{margin-top:12px;width:100%;padding:13px;border:0;border-radius:10px;
+       background:var(--accent);color:#04202b;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+  <div class="card">
+    <div class="head"><b id="code"></b><span id="sub"></span></div>
+
+    <div class="wrap">
+      <table id="tbl"></table>
+    </div>
+    <div class="capt"><span>แถว = ชั้น (1 ล่างสุด)</span><span>คอลัมน์ = โซน · เลื่อนดูได้</span></div>
+
+    <div class="name" id="name"></div>
+    <div class="meta" id="meta"></div>
+    <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO;
+  document.getElementById('code').textContent = d.code;
+  document.getElementById('sub').textContent =
+    `โซน ${d.zone} · ชั้น ${d.shelf} · ช่อง ${d.slot}`;
+
+  // หัวตาราง = โซน A..K, แถว = ชั้น 6 ลงมา 1
+  let html = '<tr><th class="s"></th>' +
+    ZONES.map(z => `<th class="z">${z.zone}</th>`).join('') + '</tr>';
+
+  for (let s = SHELVES; s >= 1; s--) {
+    html += `<tr><th class="s">${s}</th>`;
+    for (const z of ZONES) {
+      const on = z.zone === d.zone && s === d.shelf;
+      const col = z.zone === d.zone;
+      html += `<td><div class="cell${on?' on':col?' colhl':''}">${
+        on ? d.code : ''}</div></td>`;
+    }
+    html += '</tr>';
+  }
+  document.getElementById('tbl').innerHTML = html;
+
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent = `${d.item_id} · ${d.unit} · ${d.barcode}`;
+</script>
+</body>
+</html>

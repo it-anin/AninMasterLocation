@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 10 — พิมพ์เขียววาดเส้นทีละเส้น</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* โหมดพิมพ์เขียว — ภาพถูกแทนด้วยลายเส้นบนพื้นน้ำเงิน
+     เส้นวาดตัวเองทีละเส้นแล้วโซนเป้าหมายสว่างขึ้นมา
+     ต่างจากแบบผังลายเส้นเดิมตรงที่ "วาดให้ดู" ไม่ใช่โผล่มาเลย */
+  .bp { background: #0b2545; border-radius: 8px; padding: 6px; }
+  .bp svg { display: block; width: 100%; height: auto; }
+  .gridline { stroke: rgba(125,180,255,.13); stroke-width: 1; }
+  .rk { fill: none; stroke: #7dd3fc; stroke-width: 3;
+        stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+        animation: ink .5s ease-out forwards; }
+  @keyframes ink { to { stroke-dashoffset: 0; } }
+  .rk.hit { stroke: #34d399; stroke-width: 5; }
+  .fillhit { fill: rgba(52,211,153,.22); opacity: 0;
+             animation: glowin .45s ease-out forwards; }
+  @keyframes glowin { to { opacity: 1; } }
+  .lb { fill: #7dd3fc; font-size: 22px; font-weight: 800; text-anchor: middle;
+        font-family: system-ui, sans-serif; opacity: 0;
+        animation: glowin .3s ease-out forwards; }
+  .lb.hit { fill: #34d399; font-size: 28px; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <div class="bp"><svg id="bp" viewBox="0 0 1280 417" role="img" aria-label="ผังคลังแบบพิมพ์เขียว"></svg></div>
+    <div class="note">
+      โหมดพิมพ์เขียว — เส้นวาดตัวเองทีละเส้นจากซ้ายไปขวา
+      แล้วโซนเป้าหมายสว่างเป็นสีเขียว อ่านง่ายแม้จอสู้แสงไม่ไหว
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    let s = '';
+    // เส้นกริดพื้นหลัง
+    for (let x = 0; x <= IMG_W; x += 64) s += `<line class="gridline" x1="${x}" y1="0" x2="${x}" y2="${IMG_H}"/>`;
+    for (let y = 0; y <= IMG_H; y += 64) s += `<line class="gridline" x1="0" y1="${y}" x2="${IMG_W}" y2="${y}"/>`;
+
+    // กรอบห้อง
+    s += `<rect class="rk" style="--len:3400" x="30" y="60" width="${IMG_W - 60}" height="${IMG_H - 120}" rx="6"/>`;
+
+    // ชั้นวางแต่ละโซน วาดไล่จากซ้ายไปขวา
+    ZONES.forEach((z, i) => {
+      const [a, b] = zx(z), w = b - a;
+      const hit = z === zone;
+      const y = RACK_TOP, h = RACK_BOTTOM - RACK_TOP;
+      const delay = 0.28 + i * 0.1;
+      if (hit) s += `<rect class="fillhit" x="${a}" y="${y}" width="${w}" height="${h}" rx="4"
+                       style="animation-delay:${delay + 0.3}s"/>`;
+      s += `<rect class="rk${hit ? ' hit' : ''}" style="--len:${(w + h) * 2};animation-delay:${delay}s"
+              x="${a}" y="${y}" width="${w}" height="${h}" rx="4"/>`;
+      s += `<text class="lb${hit ? ' hit' : ''}" x="${a + w / 2}" y="${y - 14}"
+              style="animation-delay:${delay + 0.25}s">${z}</text>`;
+    });
+    document.getElementById('bp').innerHTML = s;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

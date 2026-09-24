@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 8 — แท็บเลื่อนใต้ภาพ</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ไม่วาดทับภาพเลย ใช้ "ตัวบ่งชี้" เลื่อนไปตามแท็บ
+     เลื่อนด้วย transform จึงลื่นแม้บนเครื่อง PDA สเปกต่ำ */
+  .tabs { position: relative; display: flex; gap: 3px; margin-top: 8px; }
+  .tab { flex: 1; padding: 9px 2px; border-radius: 6px;
+         background: #eef3f8; border: 1px solid var(--line);
+         text-align: center; font-size: 13px; font-weight: 700; color: var(--dim);
+         transition: color .3s; }
+  .tab.on { color: #fff; }
+  /* ตัวบ่งชี้ลอยอยู่ใต้แท็บ เลื่อนไปมา */
+  .ind { position: absolute; top: 0; bottom: 0; border-radius: 6px;
+         background: var(--ok); box-shadow: 0 0 0 3px rgba(4,120,87,.18);
+         transition: transform .45s cubic-bezier(.34,1.3,.64,1), width .45s; }
+  .ptr { height: 10px; margin-top: -1px; position: relative; }
+  .ptr i { position: absolute; top: 0; width: 0; height: 0;
+           border-left: 7px solid transparent; border-right: 7px solid transparent;
+           border-bottom: 9px solid var(--ok);
+           transition: left .45s cubic-bezier(.34,1.3,.64,1); transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+    </svg>
+    <div class="ptr"><i id="ptr"></i></div>
+    <div class="tabs" id="tabs"><div class="ind" id="ind"></div></div>
+    <div class="note">
+      ไม่วาดทับภาพสักเส้น — ภาพยังคมชัดเต็มที่
+      ตัวบ่งชี้เลื่อนไปตามโซน ลื่นแม้บนเครื่องสเปกต่ำเพราะใช้ transform
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const tabs = document.getElementById('tabs');
+  // สร้างแท็บครั้งเดียว แล้วแค่เลื่อนตัวบ่งชี้ ไม่ rebuild ทุกครั้ง
+  tabs.insertAdjacentHTML('beforeend',
+    ZONES.map(z => `<div class="tab" data-z="${z}">${z}</div>`).join(''));
+
+  function draw() {
+    const els = [...tabs.querySelectorAll('.tab')];
+    const i = ZONES.indexOf(zone);
+    els.forEach((el, n) => el.classList.toggle('on', n === i));
+    const el = els[i];
+    const ind = document.getElementById('ind');
+    // ตัวบ่งชี้ต้องรู้ขนาดแท็บจริง ถ้ายังวัดไม่ได้ (เช่นตอน layout ยังไม่เสร็จ) ข้ามไปก่อน
+    if (el) {
+      ind.style.width = el.offsetWidth + 'px';
+      ind.style.transform = `translateX(${el.offsetLeft}px)`;
+    }
+    document.getElementById('ptr').style.left = (zoneMidX(zone) / IMG_W * 100) + '%';
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

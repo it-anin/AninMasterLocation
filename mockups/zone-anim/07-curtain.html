@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 7 — ม่านรูดเปิดเฉพาะโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ม่านขาวสองบานรูดจากกลางออกไปสองข้าง เปิดให้เห็นเฉพาะโซน
+     เหมือนเปิดม่านโชว์ของ */
+  #cl, #cr { transition: all .85s cubic-bezier(.4,0,.2,1); }
+  .curtain { fill: rgba(255,255,255,.85); }
+  .edge { stroke: var(--ok); stroke-width: 4; transition: all .85s cubic-bezier(.4,0,.2,1); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <rect id="cl" class="curtain" x="0" y="0" height="417"/>
+      <rect id="cr" class="curtain" y="0" height="417"/>
+      <line id="el" class="edge" y1="0" y2="417"/>
+      <line id="er" class="edge" y1="0" y2="417"/>
+    </svg>
+    <div class="note">
+      ม่านขาวรูดออกสองข้าง เปิดให้เห็นเฉพาะโซนที่ต้องการ
+      ม่านปิดถึงขอบภาพพอดี จึงไม่มีปัญหาขอบชั้นวางเอียง
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function apply(L, R) {
+    const cl = document.getElementById('cl'), cr = document.getElementById('cr');
+    cl.setAttribute('width', L);
+    cr.setAttribute('x', R); cr.setAttribute('width', Math.max(0, IMG_W - R));
+    const el = document.getElementById('el'), er = document.getElementById('er');
+    el.setAttribute('x1', L); el.setAttribute('x2', L);
+    er.setAttribute('x1', R); er.setAttribute('x2', R);
+  }
+  function draw() {
+    const [a, b] = zx(zone), pad = 8;
+    const mid = (a + b) / 2;
+    apply(mid, mid);                       // เริ่มจากม่านปิดสนิท
+    requestAnimationFrame(() => requestAnimationFrame(() => apply(a - pad, b + pad)));
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

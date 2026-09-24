@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 9 — บอกทางเป็นขั้น (สำหรับพนักงานใหม่)</title>
+<style>
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;
+        --ok:#22c55e;--accent:#38bdf8;--scrim:rgba(0,0,0,.72)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+  .scan{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);
+        background:#0b1219;color:var(--ink);font-size:16px}
+
+  .banner{margin-top:10px;background:var(--ok);color:#04220f;border-radius:12px;
+          padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+  .banner b{font-size:48px;line-height:1;letter-spacing:1px}
+  .banner span{font-size:12px;font-weight:700;text-align:right;line-height:1.5}
+
+  /* อธิบายเป็นประโยค ไม่ใช่แค่รหัส — คนใหม่ยังไม่ชินกับผัง */
+  .steps{margin-top:10px;background:var(--card);border:1px solid var(--line);
+         border-radius:12px;padding:4px 12px}
+  .st{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .st:last-child{border-bottom:0}
+  .st .ic{width:32px;height:32px;flex:none;border-radius:50%;background:#101a23;
+          border:1px solid var(--line);display:grid;place-items:center;font-size:16px}
+  .st .tx{padding-top:3px}
+  .st .tx b{display:block;font-size:15px;line-height:1.35}
+  .st .tx i{display:block;font-style:normal;font-size:12px;color:var(--dim);margin-top:2px}
+
+  svg.plan{display:block;width:100%;height:auto;margin-top:10px;border-radius:8px;
+           border:1px solid var(--line)}
+  .scrim{fill:var(--scrim)}
+
+  .ladder{margin-top:10px;display:flex;flex-direction:column-reverse;gap:3px}
+  .lr{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
+  .lr .n{width:22px;height:22px;flex:none;border-radius:5px;display:grid;place-items:center;
+         background:#101a23;border:1px solid var(--line);font-weight:700}
+  .lr .t{flex:1;height:22px;border-radius:5px;background:#101a23;border:1px solid var(--line)}
+  .lr.on .n{background:var(--ok);border-color:var(--ok);color:#04220f}
+  .lr.on .t{background:rgba(34,197,94,.3);border-color:var(--ok)}
+  .lr.on{color:var(--ok);font-weight:700}
+
+  .name{margin-top:12px;font-size:16px;font-weight:600;line-height:1.35}
+  .meta{margin-top:6px;font-size:12px;color:var(--dim)}
+  .btn{margin-top:12px;width:100%;padding:13px;border:0;border-radius:10px;
+       background:var(--accent);color:#04202b;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+
+  <div class="banner"><b id="code"></b><span id="bsub"></span></div>
+
+  <div class="steps" id="steps"></div>
+
+  <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+    <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+    <path id="scrim" class="scrim" fill-rule="evenodd"/>
+  </svg>
+
+  <div class="ladder" id="ladder"></div>
+
+  <div class="name" id="name"></div>
+  <div class="meta" id="meta"></div>
+  <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO, n = slotsOf(d.zone);
+  document.getElementById('code').textContent = d.code;
+  document.getElementById('bsub').innerHTML = `โซน ${d.zone}<br>ชั้น ${d.shelf} · ช่อง ${d.slot}`;
+  document.getElementById('scrim').setAttribute('d', scrimPath(ZONE_BY_ID[d.zone]));
+
+  const half = d.shelf <= 2 ? 'ก้มลงหาชั้นล่าง'
+             : d.shelf >= 5 ? 'เงยขึ้นหาชั้นบน'
+             : 'ระดับสายตาพอดี';
+  document.getElementById('steps').innerHTML = `
+    <div class="st"><div class="ic">🚶</div><div class="tx">
+      <b>เดินไปที่ชั้นวางโซน ${d.zone}</b><i>ดูตำแหน่งในผังด้านล่าง</i></div></div>
+    <div class="st"><div class="ic">${d.shelf >= 5 ? '⬆️' : d.shelf <= 2 ? '⬇️' : '➡️'}</div><div class="tx">
+      <b>ชั้นที่ ${d.shelf} จากล่างสุด</b><i>${half} · โซนนี้มี ${SHELVES} ชั้น</i></div></div>
+    <div class="st"><div class="ic">📦</div><div class="tx">
+      <b>ช่องที่ ${d.slot} นับจากซ้าย</b><i>โซน ${d.zone} มี ${n} ช่องต่อชั้น</i></div></div>`;
+
+  const lad = document.getElementById('ladder');
+  for (let s = 1; s <= SHELVES; s++) {
+    const r = document.createElement('div');
+    r.className = 'lr' + (s === d.shelf ? ' on' : '');
+    r.innerHTML = `<div class="n">${s}</div><div class="t"></div>` +
+                  (s === d.shelf ? '<span>← อยู่ตรงนี้</span>' : '');
+    lad.appendChild(r);
+  }
+
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent = `${d.item_id} · ${d.unit} · ${d.barcode}`;
+</script>
+</body>
+</html>

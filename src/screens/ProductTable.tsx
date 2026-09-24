@@ -9,12 +9,18 @@ import {
 } from '../lib/queries';
 import { getStaff } from '../lib/auth';
 import { EditLocationDialog } from '../components/EditLocationDialog';
+import { FLOOR_PLAN_ZONES } from '../components/WarehouseFloorPlan';
 
 const PAGE_SIZE = 50;
+
+/** โซนที่มีในผังคลัง — ดึงจาก FLOOR_PLAN_ZONES ไม่ hard-code ซ้ำ */
+const ZONES = [...FLOOR_PLAN_ZONES].sort();
 
 export function ProductTable() {
   const [q, setQ] = useState('');
   const [onlyMissing, setOnlyMissing] = useState(false);
+  /** null = ทุกโซน */
+  const [zone, setZone] = useState<string | null>(null);
   const [rows, setRows] = useState<SearchRow[]>([]);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
@@ -30,6 +36,7 @@ export function ProductTable() {
       const data = await searchItems({
         q,
         onlyMissing,
+        zone,
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       });
@@ -40,7 +47,7 @@ export function ProductTable() {
       setRows([]);
     }
     setLoading(false);
-  }, [q, onlyMissing, page]);
+  }, [q, onlyMissing, zone, page]);
 
   // debounce การพิมพ์ค้นหา ไม่ยิง query ทุกตัวอักษร
   useEffect(() => {
@@ -54,7 +61,7 @@ export function ProductTable() {
 
   useEffect(() => {
     setPage(0);
-  }, [q, onlyMissing]);
+  }, [q, onlyMissing, zone]);
 
   async function handleClearLocation(row: SearchRow) {
     if (!confirm(`ลบตำแหน่งของ "${row.name}" ?`)) return;
@@ -109,6 +116,27 @@ export function ProductTable() {
             {progress.total ? Math.round((progress.filled / progress.total) * 100) : 0}%)
           </div>
         )}
+      </div>
+
+      {/* กรองตามโซน — ใช้คอลัมน์ zone ที่แยกไว้แล้ว ไม่ใช่ค้นข้อความใน location
+          (พิมพ์ "C" ในช่องค้นหาจะไปโดน DELETE/PRE ที่มีตัว C ด้วย) */}
+      <div className="zone-filter">
+        <span className="zone-filter-label">โซน</span>
+        <button
+          className={zone === null ? 'zone-btn zone-btn-on' : 'zone-btn'}
+          onClick={() => setZone(null)}
+        >
+          ทั้งหมด
+        </button>
+        {ZONES.map((z) => (
+          <button
+            key={z}
+            className={zone === z ? 'zone-btn zone-btn-on' : 'zone-btn'}
+            onClick={() => setZone(z)}
+          >
+            {z}
+          </button>
+        ))}
       </div>
 
       {error && <div className="banner-error">{error}</div>}

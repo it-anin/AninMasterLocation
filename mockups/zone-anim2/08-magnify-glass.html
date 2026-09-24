@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 8 — แว่นขยายเลื่อนมาส่อง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* แว่นขยายเลื่อนเข้ามาหยุดที่โซน แล้วในวงแว่นเห็นภาพขยายจริง
+     ต่างจากแบบซูมตรงที่ยังเห็นผังรวมรอบๆ ไปพร้อมกัน */
+  #lens { transition: transform 1.1s cubic-bezier(.34,1.2,.64,1); }
+  .ring { fill: none; stroke: #334155; stroke-width: 7; }
+  .handle { stroke: #334155; stroke-width: 12; stroke-linecap: round; }
+  .glass-bg { fill: #fff; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <defs>
+        <clipPath id="lensClip"><circle id="clipC" cx="0" cy="0" r="96"/></clipPath>
+      </defs>
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417" opacity=".45"/>
+      <g id="lens">
+        <circle class="glass-bg" cx="0" cy="0" r="96"/>
+        <!-- ภาพเดิมขยาย 2.2 เท่า ตัดด้วย clip วงกลม -->
+        <g clip-path="url(#lensClip)">
+          <image id="zimg" href="wh.jpg"/>
+        </g>
+        <line class="handle" x1="66" y1="66" x2="128" y2="128"/>
+        <circle class="ring" cx="0" cy="0" r="96"/>
+      </g>
+    </svg>
+    <div class="note">
+      แว่นขยายเลื่อนมาหยุดที่โซน ในวงแว่นเห็นภาพขยายจริง
+      ต่างจากการซูมทั้งจอ — ยังเห็นผังรวมรอบๆ ไปพร้อมกัน
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const Z = 2.2, cy = (RACK_TOP + RACK_BOTTOM) / 2;
+  function place(cx, animate) {
+    const lens = document.getElementById('lens');
+    if (!animate) lens.style.transition = 'none';
+    lens.setAttribute('transform', `translate(${cx} ${cy})`);
+    if (!animate) { void lens.getBoundingClientRect(); lens.style.transition = ''; }
+    // ภาพในแว่น: ขยาย Z เท่าแล้วเลื่อนให้จุด (cx,cy) มาอยู่กลางวง
+    const img = document.getElementById('zimg');
+    img.setAttribute('width', IMG_W * Z);
+    img.setAttribute('height', IMG_H * Z);
+    img.setAttribute('x', -cx * Z);
+    img.setAttribute('y', -cy * Z);
+  }
+  function draw() {
+    place(140, false);                                   // เริ่มจากซ้ายสุด
+    requestAnimationFrame(() => requestAnimationFrame(() => place(zoneMidX(zone), true)));
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

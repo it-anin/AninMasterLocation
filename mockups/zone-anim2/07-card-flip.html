@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 7 — การ์ดพลิกเผยรหัส</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* การ์ดพลิก 3 มิติจากผังไปเป็นรหัสตัวใหญ่
+     เหมาะกับคนที่อยากเห็น "รหัส" เป็นหลัก ส่วนผังเป็นรอง */
+  .flip { perspective: 900px; }
+  .inner { position: relative; transition: transform .8s cubic-bezier(.4,0,.2,1);
+           transform-style: preserve-3d; }
+  .inner.turned { transform: rotateY(180deg); }
+  .face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .back { position: absolute; inset: 0; transform: rotateY(180deg);
+          background: var(--ok); border-radius: 10px;
+          display: grid; place-items: center; }
+  .back b { font-size: 68px; color: #fff; font-weight: 800; letter-spacing: 2px; }
+  .back i { font-style: normal; font-size: 14px; color: #d1fae5; margin-top: 4px; }
+  .tap { margin-top: 8px; font-size: 11px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <div class="flip">
+      <div class="inner" id="inner">
+        <svg class="plan face" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+          <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+          <path id="dim" fill="rgba(255,255,255,.66)" fill-rule="evenodd"/>
+          <rect id="band" fill="rgba(4,120,87,.14)" stroke="#047857" stroke-width="3" rx="6"/>
+        </svg>
+        <div class="back"><b id="big"></b><i id="bsub"></i></div>
+      </div>
+    </div>
+    <div class="tap">แตะการ์ดเพื่อพลิกกลับไปดูผัง</div>
+    <div class="note">
+      การ์ดพลิกจากผังไปเป็นรหัสตัวใหญ่ เหมาะกับคนที่ต้องการ "รหัส" เป็นหลัก
+      แตะเพื่อพลิกกลับไปดูผังได้ตลอด
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const inner = document.getElementById('inner');
+  inner.addEventListener('click', () => inner.classList.toggle('turned'));
+
+  function draw() {
+    const [a, b] = zx(zone), pad = 6, x = a - pad, w = (b - a) + pad * 2;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} 0H${x + w}V${IMG_H}H${x}Z`);
+    const bd = document.getElementById('band');
+    bd.setAttribute('x', x); bd.setAttribute('y', 2);
+    bd.setAttribute('width', w); bd.setAttribute('height', IMG_H - 4);
+
+    const code = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('big').textContent = code;
+    document.getElementById('bsub').textContent =
+      `เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+    document.getElementById('code').textContent = code;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+
+    // เริ่มที่ด้านผัง แล้วพลิกไปโชว์รหัส
+    inner.classList.remove('turned');
+    setTimeout(() => inner.classList.add('turned'), 260);
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

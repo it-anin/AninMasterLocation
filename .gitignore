@@ -13,6 +13,7 @@
 node_modules/
 dist/
 *.local
+tsconfig.tsbuildinfo
 
 # Android
 *.apk

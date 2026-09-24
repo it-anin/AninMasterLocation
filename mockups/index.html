@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ UI หน้าจอ PDA — 10 แบบ</title>
+<style>
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;--accent:#38bdf8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif;padding:20px}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--dim);font-size:14px;margin-bottom:6px;line-height:1.6}
+  .warn{background:#2a2410;border:1px solid #6b5a18;color:#f3d999;
+        border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6;margin:14px 0 20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+        display:flex;flex-direction:column}
+  .item h2{font-size:14px;margin:0;padding:10px 12px;border-bottom:1px solid var(--line);
+           display:flex;justify-content:space-between;align-items:center}
+  .item h2 a{color:var(--accent);text-decoration:none;font-size:12px;font-weight:400}
+  .item p{margin:0;padding:8px 12px;font-size:12px;color:var(--dim);line-height:1.6;
+          border-bottom:1px solid var(--line);min-height:62px}
+  .frame{background:#000;height:420px;overflow:hidden;position:relative}
+  iframe{width:480px;height:800px;border:0;transform:scale(.62);transform-origin:top left;
+         position:absolute;top:0;left:50%;margin-left:-149px}
+</style>
+</head>
+<body>
+  <h1>แบบ UI หน้าจอ PDA — 10 แบบ</h1>
+  <div class="lead">
+    ทุกแบบใช้ข้อมูลตัวอย่างชุดเดียวกัน (<b>C32</b> = โซน C ชั้น 3 ช่อง 2) เทียบกันได้ตรงๆ<br>
+    แก้ข้อมูล/จำนวนชั้น/จำนวนช่อง ได้ที่ <code>shared.js</code> ที่เดียว ทุกแบบเปลี่ยนตาม
+  </div>
+
+  <div class="warn">
+    ⚠️ <b>ยังไม่ได้ยืนยัน 2 อย่าง</b><br>
+    • <b>โซน J/K มีกี่ช่อง?</b> ยังไม่ได้ระบุ — ตอนนี้ตั้งเป็น 7 ตามโซนข้างเคียง (F–I)<br>
+    • <b>รหัส A11 ชนกับระบบเดิม</b> — <code>parseLocation()</code> ปัจจุบันอ่าน <code>A11</code>
+      ว่า "โซน A ชั้น 11" ถ้าใช้ scheme ใหม่นี้ ต้องแก้ regex ทั้งใน
+      <code>0001_schema.sql</code> และ <code>queries.ts</code> พร้อมกัน (กฎเหล็กข้อ 6)
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+<script>
+  const items = [
+    ['01-photo-ladder.html','1 · ภาพผัง + บันไดชั้น',
+     'ภาพ render จริงไฮไลท์โซน แล้วมีบันไดชั้น 1-6 เรียงล่างขึ้นบนอยู่ใต้ภาพ เห็นครบทั้งโซนและชั้นในจอเดียว'],
+    ['02-hero-code.html','2 · รหัสยักษ์เต็มจอ',
+     'ทั้งจอมีหน้าที่เดียวคือบอกรหัส อ่านได้จากระยะไกล แยกให้เห็นว่าแต่ละหลักคืออะไร กันอ่าน C32 ผิดเป็น "ชั้น 32"'],
+    ['03-rack-elevation.html','3 · ภาพด้านหน้าชั้นวาง',
+     'วาดชั้นวางแบบมองจากด้านหน้า ตรงกับสิ่งที่พนักงานเห็นจริงตอนยืนหน้าชั้น ช่องที่ใช่เรืองแสง'],
+    ['04-split-map-rack.html','4 · ผังบน + ชั้นล่าง (2 ขั้น)',
+     'เล่าเป็น 2 ขั้นชัดเจน: ขั้น 1 ไปโซนไหน (ดูภาพ) ขั้น 2 ชั้น/ช่องไหน (ดูตาราง)'],
+    ['05-light-daylight.html','5 · โหมดสว่าง (กลางแจ้ง)',
+     'พื้นขาว คอนทราสต์สูง ตัวหนา สำหรับคลังที่แสงจ้าจนจอมืดอ่านไม่ออก'],
+    ['06-map-overlay.html','6 · ป้ายปักบนผังโดยตรง',
+     'ป้ายรหัสปักลงบนโซนในภาพเลย พร้อมเส้นชี้ระดับความสูงของชั้น ไม่ต้องกวาดตาไปมาระหว่างภาพกับตัวเลข'],
+    ['07-compact-dense.html','7 · แน่น เห็นรายการล่าสุด',
+     'สำหรับคนสแกนรัวๆ ผลลัพธ์ย่อลง แลกกับการเห็นของที่เพิ่งยิงไป 4-5 ชิ้นพร้อมกัน'],
+    ['08-isometric-rack.html','8 · ชั้นวางสามมิติ (SVG)',
+     'วาดชั้นวางเอียงแบบ isometric ให้ความรู้สึกใกล้ภาพ render มากกว่าตารางแบน กล่องที่ใช่เด้งขึ้นมา'],
+    ['09-wayfinding.html','9 · บอกทางเป็นขั้น',
+     'อธิบายเป็นประโยคว่าเดินไปไหน ก้มหรือเงย นับช่องจากไหน สำหรับพนักงานใหม่ที่ยังไม่ชินผัง'],
+    ['10-full-grid.html','10 · ตารางทั้งคลัง',
+     'ไม่ใช้ภาพเลย เห็นทุกโซนทุกชั้นในตารางเดียว เหมาะกับคนที่จำผังได้แล้ว และใช้ดูภาพรวมได้'],
+  ];
+  document.getElementById('grid').innerHTML = items.map(([f,t,d]) =>
+    `<div class="item">
+       <h2>${t}<a href="${f}" target="_blank">เปิดเต็มจอ ↗</a></h2>
+       <p>${d}</p>
+       <div class="frame"><iframe src="${f}" loading="lazy" title="${t}"></iframe></div>
+     </div>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ไฮไลท์โซน แบบมีอนิเมชัน — 10 แบบ</title>
+<style>
+  :root { --bg:#0f1720; --card:#17212b; --line:#2a3947; --ink:#e8eef4; --dim:#93a4b5; --accent:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:"Noto Sans Thai",system-ui,sans-serif; padding:20px; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  .lead { color:var(--dim); font-size:14px; line-height:1.7; margin-bottom:16px; }
+  .tip { background:#0e2a22; border:1px solid #1d5c49; color:#a7e8d0;
+         border-radius:10px; padding:11px 13px; font-size:13px; line-height:1.7; margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:18px; }
+  .item { background:var(--card); border:1px solid var(--line); border-radius:12px;
+          overflow:hidden; display:flex; flex-direction:column; }
+  .item h2 { font-size:14px; margin:0; padding:10px 12px; border-bottom:1px solid var(--line);
+             display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .item h2 a { color:var(--accent); text-decoration:none; font-size:12px; font-weight:400; white-space:nowrap; }
+  .item p { margin:0; padding:9px 12px; font-size:12px; color:var(--dim);
+            line-height:1.65; border-bottom:1px solid var(--line); min-height:74px; }
+  .frame { background:#fff; height:440px; overflow:hidden; position:relative; }
+  iframe { width:480px; height:920px; border:0; transform:scale(.64); transform-origin:top left;
+           position:absolute; top:0; left:50%; margin-left:-154px; }
+</style>
+</head>
+<body>
+  <h1>ไฮไลท์โซน แบบมีอนิเมชัน — 10 แบบ</h1>
+  <div class="lead">
+    ต่อยอดจาก 10 แบบนิ่ง เพิ่มการเคลื่อนไหวเพื่อดึงสายตาตอนผลลัพธ์เด้งขึ้นมา<br>
+    ทุกแบบมีปุ่มสลับโซน A–K และปุ่ม <b>▶ เล่นซ้ำ</b> ให้ดูอนิเมชันอีกครั้งโดยไม่ต้องรีเฟรช
+  </div>
+
+  <div class="tip">
+    <b>ทุกแบบรองรับการปิดอนิเมชัน</b> — ถ้าเครื่องตั้ง "ลดการเคลื่อนไหว" (reduced motion)
+    ไว้ อนิเมชันจะถูกตัดออกอัตโนมัติ เหลือแต่ผลลัพธ์สุดท้าย ใช้งานได้ปกติทุกแบบ
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+<script>
+  const items = [
+    ['01-pin-drop-bounce.html','1 · หมุดหล่นลงมาเด้ง',
+     'หมุดหล่นจากด้านบนลงมาเด้ง พร้อมคลื่นกระเพื่อมตอนกระแทก ตาไล่ตามไปหยุดตรงโซนพอดี'],
+    ['02-radar-sweep.html','2 · เรดาร์กวาดหาทั่วคลัง',
+     'เส้นกวาดวิ่งผ่านทั้งคลังแล้วหยุดที่โซนเป้าหมาย สื่อว่า "กำลังหา → เจอแล้ว" ในอนิเมชันเดียว'],
+    ['03-pulse-ring.html','3 · วงกระเพื่อมเต้นต่อเนื่อง',
+     'วงแหวนแผ่ออกไม่หยุด เห็นได้จากหางตาแม้ไม่ได้จ้องจอ เหมาะเวลาเดินไปมองจอไปสลับกัน'],
+    ['04-walk-path.html','4 · เส้นทางเดินวิ่งจากประตู',
+     'เส้นประวิ่งจากประตูไปยังโซน บอกว่า "เดินยังไง" ไม่ใช่แค่ "อยู่ไหน" เหมาะกับพนักงานใหม่'],
+    ['05-spotlight-slide.html','5 · ไฟสปอตเลื่อนไปหาโซน',
+     'ไฟเริ่มกลางคลังแล้วเลื่อนไปหยุดที่โซน ตาไล่ตามลำแสง ขอบไฟเบลอจึงไม่มีปัญหากรอบไม่ตรง'],
+    ['06-zoom-in.html','6 · กล้องซูมเข้าหาโซน',
+     'ค่อยๆ ซูมจากภาพรวมเข้าไปหาโซน ไม่หลงว่าอยู่ตรงไหนของคลัง จบแล้วเห็นเต็มตา'],
+    ['07-curtain.html','7 · ม่านรูดเปิดเฉพาะโซน',
+     'ม่านขาวรูดออกสองข้างเปิดให้เห็นเฉพาะโซน ม่านปิดถึงขอบภาพ จึงไม่มีปัญหาขอบชั้นวางเอียง'],
+    ['08-tab-slide.html','8 · แท็บเลื่อนใต้ภาพ',
+     'ไม่วาดทับภาพสักเส้น ภาพยังคมเต็มที่ ตัวบ่งชี้เลื่อนไปตามโซน ลื่นแม้เครื่องสเปกต่ำ'],
+    ['09-beam-down.html','9 · ลำแสงสาดลงจากเพดาน',
+     'ลำแสงบานออกด้านล่างตามธรรมชาติของแสง ความไม่พอดีขอบกลายเป็นเรื่องปกติ ไม่ใช่ข้อผิดพลาด'],
+    ['10-countdown-zones.html','10 · ไล่ดับทีละโซน',
+     'ทุกโซนสว่างตอนเริ่ม แล้วไล่ดับโซนที่ไม่ใช่ทีละอันจนเหลือโซนเดียว เห็นการคัดกรองกับตา'],
+  ];
+  document.getElementById('grid').innerHTML = items.map(([f,t,d]) =>
+    `<div class="item">
+       <h2>${t}<a href="${f}" target="_blank">เปิดเต็มจอ ↗</a></h2>
+       <p>${d}</p>
+       <div class="frame"><iframe src="${f}" loading="lazy" title="${t}"></iframe></div>
+     </div>`).join('');
+</script>
+</body>
+</html>

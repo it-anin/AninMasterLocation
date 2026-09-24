@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 9 — ซูมเฉพาะโซนนั้น</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ตัดภาพมาเฉพาะช่วงโซนนั้นแล้วขยาย — ไม่ต้องไฮไลท์อะไรเลย
+     เพราะทั้งจอมีแต่โซนนั้นโซนเดียว */
+  .mini { position: relative; margin-top: 8px; }
+  .mini svg { display: block; width: 100%; height: auto;
+              border: 1px solid var(--line); border-radius: 6px; }
+  .mini-lab { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .vp { fill: none; stroke: var(--ok); stroke-width: 5; }
+  .vp-dim { fill: rgba(255,255,255,.66); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <!-- ภาพหลัก: ซูมเฉพาะโซน -->
+    <svg class="plan" id="zoom" role="img" aria-label="ภาพขยายเฉพาะโซน">
+      <image id="zimg" href="wh.jpg"/>
+    </svg>
+
+    <!-- ภาพเล็ก: บอกว่าที่ซูมอยู่คือตรงไหนของคลัง -->
+    <div class="mini">
+      <svg viewBox="0 0 1280 417" role="img" aria-label="ตำแหน่งในผังรวม">
+        <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+        <path id="mdim" class="vp-dim" fill-rule="evenodd"/>
+        <rect id="vp" class="vp" rx="4"/>
+      </svg>
+      <div class="mini-lab">ตำแหน่งในผังรวม</div>
+    </div>
+
+    <div class="note">
+      ซูมเข้าไปจนเห็นแต่โซนนั้น — ไม่ต้องมีกรอบไฮไลท์ให้ผิดเพี้ยน
+      มีผังเล็กด้านล่างกำกับว่ากำลังดูส่วนไหนของคลัง
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone);
+    const pad = 46;
+    const vx = Math.max(0, a - pad), vw = Math.min(IMG_W - vx, (b - a) + pad * 2);
+    const vy = RACK_TOP - 24, vh = (RACK_BOTTOM - RACK_TOP) + 60;
+
+    const zs = document.getElementById('zoom');
+    zs.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+    const zi = document.getElementById('zimg');
+    zi.setAttribute('x', 0); zi.setAttribute('y', 0);
+    zi.setAttribute('width', IMG_W); zi.setAttribute('height', IMG_H);
+
+    document.getElementById('mdim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${vx} ${vy}H${vx + vw}V${vy + vh}H${vx}Z`);
+    const vp = document.getElementById('vp');
+    vp.setAttribute('x', vx); vp.setAttribute('y', vy);
+    vp.setAttribute('width', vw); vp.setAttribute('height', vh);
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

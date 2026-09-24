@@ -29,7 +29,8 @@ export function WarehouseMap({ cells, activeZone, activeAisle, activeLabel }: Pr
       activeAisle != null &&
       !cells.some((c) => c.zone === activeZone && c.aisle === activeAisle)
     ) {
-      all.push({ zone: activeZone, aisle: activeAisle, item_count: 1 });
+      // slot ไม่เกี่ยวกับผังนี้ (ผังนี้แสดงแค่โซน/ชั้น) — ใส่ null ไว้ให้ครบ type
+      all.push({ zone: activeZone, aisle: activeAisle, slot: null, item_count: 1 });
     }
 
     const byZone = new Map<string, number[]>();

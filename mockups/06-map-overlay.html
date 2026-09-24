@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 6 — ป้ายปักบนผังโดยตรง</title>
+<style>
+  :root{--bg:#0f1720;--card:#17212b;--line:#2a3947;--ink:#e8eef4;--dim:#93a4b5;
+        --ok:#22c55e;--accent:#38bdf8;--scrim:rgba(0,0,0,.7)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+  .scan{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);
+        background:#0b1219;color:var(--ink);font-size:16px}
+  .card{margin-top:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;padding:12px}
+
+  /* ผังเต็มความกว้าง ป้ายรหัสปักอยู่บนโซนนั้นเลย — ไม่ต้องกวาดตาไปมา */
+  svg.plan{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}
+  .scrim{fill:var(--scrim)}
+  .pin-line{stroke:var(--ok);stroke-width:3}
+  .pin-box{fill:var(--ok)}
+  .pin-txt{fill:#04220f;font-weight:800;font-family:system-ui,sans-serif;text-anchor:middle}
+  .pin-dot{fill:var(--ok);stroke:#fff;stroke-width:3}
+
+  .under{margin-top:10px;display:flex;gap:8px}
+  .chip{flex:1;padding:9px;border-radius:9px;background:#101a23;border:1px solid var(--line);
+        text-align:center}
+  .chip i{display:block;font-style:normal;font-size:11px;color:var(--dim)}
+  .chip b{display:block;font-size:22px;margin-top:2px}
+  .chip.hl b{color:var(--ok)}
+
+  .name{margin-top:12px;font-size:17px;font-weight:600;line-height:1.35}
+  .meta{margin-top:6px;font-size:12px;color:var(--dim)}
+  .btn{margin-top:12px;width:100%;padding:13px;border:0;border-radius:10px;
+       background:var(--accent);color:#04202b;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+  <div class="card">
+    <svg class="plan" id="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลังพร้อมป้ายตำแหน่ง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="scrim" class="scrim" fill-rule="evenodd"/>
+      <g id="pin"></g>
+    </svg>
+
+    <div class="under">
+      <div class="chip"><i>โซน</i><b id="c1"></b></div>
+      <div class="chip hl"><i>ชั้น (ล่าง→บน)</i><b id="c2"></b></div>
+      <div class="chip"><i>ช่อง</i><b id="c3"></b></div>
+    </div>
+
+    <div class="name" id="name"></div>
+    <div class="meta" id="meta"></div>
+    <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO, z = ZONE_BY_ID[d.zone];
+  document.getElementById('scrim').setAttribute('d', scrimPath(z));
+  document.getElementById('c1').textContent = d.zone;
+  document.getElementById('c2').textContent = d.shelf;
+  document.getElementById('c3').textContent = d.slot;
+
+  // ป้ายลอยเหนือโซน ชี้ลงมาที่ความสูงของชั้น (ชั้น 1 ล่างสุด → y มาก)
+  const q = zoneQuad(z);
+  const cx = (q.tl[0] + q.tr[0]) / 2;
+  const top = z.sy, bot = z.sy + z.sh;
+  const shelfY = bot - ((d.shelf - 0.5) / SHELVES) * z.sh;
+
+  const boxW = 150, boxH = 54, boxY = 8;
+  document.getElementById('pin').innerHTML = `
+    <line class="pin-line" x1="${cx}" y1="${boxY+boxH}" x2="${cx}" y2="${shelfY}"/>
+    <circle class="pin-dot" cx="${cx}" cy="${shelfY}" r="11"/>
+    <rect class="pin-box" x="${cx-boxW/2}" y="${boxY}" width="${boxW}" height="${boxH}" rx="10"/>
+    <text class="pin-txt" x="${cx}" y="${boxY+40}" font-size="38">${d.code}</text>`;
+
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent = `${d.item_id} · ${d.unit} · ${d.barcode}`;
+</script>
+</body>
+</html>

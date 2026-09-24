@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 1 — ภาพผัง + ชั้นวางจากภาพจริง (โหมดสว่าง)</title>
+<style>
+  /* โหมดสว่าง — คอนทราสต์สูงพอสำหรับคลังที่แสงจ้า
+     สีเขียวเข้ม (ไม่ใช่เขียวสด) เพราะบนพื้นขาวเขียวสดจะกลืนและอ่านยาก */
+  :root{
+    --bg:#f4f7fa; --card:#ffffff; --line:#cfdae5; --ink:#0d1b2a; --dim:#5a6b7d;
+    --ok:#047857; --ok-soft:#d1fae5; --ok-line:#059669;
+    --accent:#0369a1; --warn:#b45309;
+    --scrim:rgba(255,255,255,.72);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+       -webkit-text-size-adjust:100%}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+
+  .scan{width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);
+        background:#fff;color:var(--ink);font-size:16px;font-weight:500}
+  .scan:focus{outline:0;border-color:var(--accent)}
+
+  .card{margin-top:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;padding:12px;
+        box-shadow:0 1px 3px rgba(13,27,42,.07)}
+
+  /* รหัสใหญ่สุด — อ่านได้จากระยะแขน */
+  .big{display:flex;align-items:baseline;gap:10px;margin-bottom:3px}
+  .big b{font-size:58px;line-height:1;letter-spacing:1px;color:var(--ok);font-weight:800}
+  .big span{font-size:13px;color:var(--dim);font-weight:600}
+  .sub{font-size:14px;color:var(--dim);margin-bottom:10px}
+
+  /* ── ขั้น 1 · ผังคลัง บอกว่าโซนไหน ── */
+  .step{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.5px;
+        margin:12px 0 5px;display:flex;align-items:center;gap:6px}
+  .step i{width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;
+          display:grid;place-items:center;font-style:normal;font-size:11px;flex:none}
+
+  svg.plan{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}
+  .scrim{fill:var(--scrim)}
+  .zring{fill:none;stroke:var(--ok-line);stroke-width:5}
+
+  /* ── ขั้น 2 · ชั้นวางจากภาพถ่ายจริง + ตารางทับ ── */
+  .rack{position:relative;border-radius:8px;border:1px solid var(--line);overflow:hidden;
+        background:#e9eef3}
+  .rack img{display:block;width:100%;height:auto}
+  /* ตารางวาดทับภาพ — เกาะพิกัดชั้น/เสาที่วัดจากภาพจริง */
+  .rack svg{position:absolute;inset:0;width:100%;height:100%}
+  .dim-out{fill:rgba(255,255,255,.7)}
+  .hit-box{fill:rgba(4,120,87,.34);stroke:var(--ok);stroke-width:3}
+  .hit-txt{fill:#fff;font-weight:800;text-anchor:middle;dominant-baseline:middle;
+           font-family:system-ui,sans-serif;paint-order:stroke;
+           stroke:var(--ok);stroke-width:5;stroke-linejoin:round}
+  .shelf-n{fill:var(--dim);font-size:15px;font-weight:800;text-anchor:middle;
+           dominant-baseline:middle;font-family:system-ui,sans-serif}
+  .shelf-n.on{fill:#fff;paint-order:stroke;stroke:var(--ok);stroke-width:6;stroke-linejoin:round}
+  .shelf-line{stroke:var(--ok-line);stroke-width:2;stroke-dasharray:5 4;opacity:.8}
+
+  .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);
+        margin-top:6px}
+
+  /* เตือนเฉพาะตอนภาพกับ scheme ไม่ตรงกัน — ลบทิ้งได้เมื่อได้ภาพ 6 ชั้นแล้ว */
+  .imgwarn{margin-top:6px;padding:7px 9px;background:#fff7ed;border:1px solid #fed7aa;
+           border-radius:8px;font-size:11px;color:var(--warn);line-height:1.5}
+
+  .facts{margin-top:10px;display:flex;gap:7px}
+  .fact{flex:1;padding:8px 6px;border-radius:9px;background:#f1f6fa;
+        border:1px solid var(--line);text-align:center}
+  .fact i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:600}
+  .fact b{display:block;font-size:21px;margin-top:1px;font-weight:800}
+  .fact.hl{background:var(--ok-soft);border-color:var(--ok-line)}
+  .fact.hl b{color:var(--ok)}
+
+  .name{margin-top:12px;font-size:17px;font-weight:700;line-height:1.35}
+  .meta{margin-top:5px;font-size:12px;color:var(--dim)}
+  .note{margin-top:7px;padding:7px 9px;background:#fff7ed;border:1px solid #fed7aa;
+        border-radius:8px;font-size:12px;color:var(--warn)}
+  .btn{margin-top:12px;width:100%;padding:14px;border:0;border-radius:10px;
+       background:var(--accent);color:#fff;font-size:15px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+
+  <div class="card">
+    <div class="big"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+    <div class="sub" id="sub"></div>
+
+    <div class="step"><i>1</i><span id="s1"></span></div>
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="scrim" class="scrim" fill-rule="evenodd"/>
+      <path id="zring" class="zring"/>
+    </svg>
+
+    <div class="step"><i>2</i><span id="s2"></span></div>
+    <div class="rack">
+      <img id="rackimg" alt="ชั้นวางมองจากด้านหน้า">
+      <svg id="ov" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+    <div class="axis"><span>← ช่องที่ 1</span><span>ชั้น 1 = ล่างสุด</span></div>
+    <div class="imgwarn" id="imgwarn"></div>
+
+    <div class="facts">
+      <div class="fact"><i>โซน</i><b id="f1"></b></div>
+      <div class="fact hl"><i>ชั้น (ล่าง→บน)</i><b id="f2"></b></div>
+      <div class="fact"><i>ช่อง</i><b id="f3"></b></div>
+    </div>
+
+    <div class="name" id="name"></div>
+    <div class="meta" id="meta"></div>
+    <div class="note" id="note"></div>
+    <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO, z = ZONE_BY_ID[d.zone], n = slotsOf(d.zone);
+
+  document.getElementById('code').textContent = d.code;
+  document.getElementById('sub').textContent =
+    `โซน ${d.zone} · ชั้นที่ ${d.shelf} (นับจากล่าง) · ช่องที่ ${d.slot}`;
+  document.getElementById('s1').textContent = `เดินไปชั้นวางโซน ${d.zone}`;
+  document.getElementById('s2').textContent =
+    `ชั้นที่ ${d.shelf} จากล่าง · ช่องที่ ${d.slot} จากซ้าย`;
+
+  // ── ขั้น 1: ผังคลัง ──
+  document.getElementById('scrim').setAttribute('d', scrimPath(z));
+  const q = zoneQuad(z);
+  document.getElementById('zring').setAttribute('d',
+    `M${q.tl[0]} ${q.tl[1]}L${q.tr[0]} ${q.tr[1]}L${q.br[0]} ${q.br[1]}L${q.bl[0]} ${q.bl[1]}Z`);
+
+  // ── ขั้น 2: ตารางทับภาพชั้นวาง ──
+  // ทุกพิกัดมาจาก RACK_IMG ใน shared.js — เปลี่ยนภาพแก้ที่นั่นที่เดียว
+  const RACK = RACK_IMG;
+  document.getElementById('rackimg').src = RACK.src;
+  document.getElementById('ov').setAttribute('viewBox', `0 0 ${RACK.w} ${RACK.h}`);
+
+  // ช่องเกินจำนวนช่องในภาพ (ช่อง 7) → แถบเหนือชั้นวาง
+  const onTop = d.slot > RACK.bays;
+  const band = shelfBand(d.shelf);
+
+  const hx = onTop ? RACK.topStrip.x : RACK.bayEdges[d.slot - 1];
+  const colW = onTop
+    ? RACK.topStrip.width
+    : RACK.bayEdges[d.slot] - RACK.bayEdges[d.slot - 1];
+  const hy = onTop ? RACK.topStrip.top : band.top;
+  const rowH = onTop
+    ? RACK.topStrip.bottom - RACK.topStrip.top
+    : band.bottom - band.top;
+
+  let svg = '';
+  // คลุมทั้งภาพให้จาง แล้วเจาะเฉพาะช่องที่ใช่ (evenodd เหมือนผังคลัง)
+  svg += `<path class="dim-out" fill-rule="evenodd" d="M0 0H${RACK.w}V${RACK.h}H0Z
+          M${hx} ${hy}H${hx+colW}V${hy+rowH}H${hx}Z"/>`;
+  // เส้นประคร่อมชั้นที่ใช่ ให้กวาดตาตามแนวนอนได้ง่าย
+  svg += `<line class="shelf-line" x1="0" y1="${hy}" x2="${RACK.w}" y2="${hy}"/>`;
+  svg += `<line class="shelf-line" x1="0" y1="${hy+rowH}" x2="${RACK.w}" y2="${hy+rowH}"/>`;
+  // เลขชั้นด้านซ้าย — วางกึ่งกลางช่องว่างระหว่างแผ่นไม้ของชั้นนั้น
+  for (let s = 1; s <= SHELVES; s++) {
+    const b = shelfBand(s);
+    const on = s === d.shelf;
+    svg += `<text class="shelf-n${on?' on':''}" x="13" y="${(b.top+b.bottom)/2}">${s}</text>`;
+  }
+  // กรอบช่องที่ใช่ + รหัสเต็ม
+  svg += `<rect class="hit-box" x="${hx}" y="${hy}" width="${colW}" height="${rowH}" rx="4"/>`;
+  svg += `<text class="hit-txt" x="${hx+colW/2}" y="${hy+rowH/2}"
+           font-size="${Math.min(26, colW*0.5)}">${d.code}</text>`;
+  document.getElementById('ov').innerHTML = svg;
+
+  document.getElementById('f1').textContent = d.zone;
+  document.getElementById('f2').textContent = d.shelf;
+  document.getElementById('f3').textContent = d.slot;
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent =
+    `${d.item_id} · ${d.unit} · ${d.barcode}`;
+  const note = document.getElementById('note');
+  if (d.note) note.textContent = '📝 ' + d.note; else note.style.display = 'none';
+
+  // ภาพยังไม่ตรงกับ scheme — บอกตรงๆ ดีกว่าปล่อยให้เข้าใจว่ากรอบทับชั้นจริง
+  const w = document.getElementById('imgwarn');
+  if (rackImgMatches()) {
+    w.style.display = 'none';
+  } else {
+    w.innerHTML = `⚠️ ภาพนี้มีชั้นจริง <b>${RACK_IMG.shelves}</b> ชั้น
+      แต่ระบบใช้ <b>${SHELVES}</b> ชั้น — กรอบจึงแบ่งเท่าๆ กัน ไม่ทับแผ่นไม้จริง
+      <br>เปลี่ยนเป็นภาพชั้นวาง ${SHELVES} ชั้นแล้วแก้ <code>RACK_IMG</code> ใน
+      <code>shared.js</code> กรอบจะตรงพอดีเอง`;
+  }
+</script>
+</body>
+</html>

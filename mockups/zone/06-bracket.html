@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 6 — วงเล็บครอบบน-ล่าง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ใช้ "มุมฉาก 4 มุม" แทนกรอบเต็ม — ตาเติมเส้นที่ขาดหายเอง
+     เว้นตรงกลางไว้ ทำให้ขอบที่ไม่พอดีไม่ถูกสังเกต */
+  .br { fill: none; stroke: var(--ok); stroke-width: 6;
+        stroke-linecap: round; stroke-linejoin: round; }
+  .dim { fill: rgba(255,255,255,.55); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      มุมฉาก 4 มุมแบบกรอบกล้องถ่ายรูป — เส้นไม่ต่อกันตลอดแนว
+      ความไม่พอดีของขอบจึงไม่เด่นเท่ากรอบทึบ
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone);
+    const pad = 10;
+    const L = a - pad, R = b + pad, T = RACK_TOP - 10, B = RACK_BOTTOM + 10;
+    const armX = Math.min(26, (R - L) / 2.4), armY = 34;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${L} ${T}H${R}V${B}H${L}Z`);
+    document.getElementById('mark').innerHTML = `
+      <path class="br" d="M${L} ${T + armY}V${T}H${L + armX}"/>
+      <path class="br" d="M${R - armX} ${T}H${R}V${T + armY}"/>
+      <path class="br" d="M${R} ${B - armY}V${B}H${R - armX}"/>
+      <path class="br" d="M${L + armX} ${B}H${L}V${B - armY}"/>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 3 — วงกระเพื่อมเต้นต่อเนื่อง</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* วงแหวนแผ่ออกจากป้ายโซนเรื่อยๆ ไม่หยุด — เห็นได้จากหางตา
+     เหมาะเวลาพนักงานมองจอแวบเดียวระหว่างเดิน */
+  .r1 { animation: pulse 1.8s ease-out infinite; }
+  .r2 { animation: pulse 1.8s .6s ease-out infinite; }
+  .r3 { animation: pulse 1.8s 1.2s ease-out infinite; }
+  @keyframes pulse {
+    0%   { r: 22; opacity: .75; stroke-width: 6; }
+    100% { r: 78; opacity: 0;   stroke-width: 1; }
+  }
+  .ring { fill: none; stroke: var(--ok); }
+  .dim { fill: rgba(255,255,255,.66); }
+  .badge { fill: var(--ok); stroke: #fff; stroke-width: 4; }
+  .badge-t { fill: #fff; font-weight: 800; text-anchor: middle;
+             dominant-baseline: central; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <rect class="dim" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      วงแหวนแผ่ออกไม่หยุด เห็นได้จากหางตาแม้ไม่ได้จ้องจอ
+      เหมาะเวลาพนักงานเดินไปมองจอไปสลับกัน
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const p = LABELS[zone];
+    document.getElementById('mark').innerHTML = `
+      <circle class="ring r1" cx="${p.x}" cy="${p.y}"/>
+      <circle class="ring r2" cx="${p.x}" cy="${p.y}"/>
+      <circle class="ring r3" cx="${p.x}" cy="${p.y}"/>
+      <circle class="badge" cx="${p.x}" cy="${p.y}" r="30"/>
+      <text class="badge-t" x="${p.x}" y="${p.y}" font-size="36">${zone}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

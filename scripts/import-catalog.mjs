@@ -31,7 +31,7 @@ const CSV_CANDIDATES = [
   'C:\\Users\\BigYa-spare\\Desktop\\Cycle-Count\\R05106.CSV',
 ];
 
-const SUPABASE_URL = 'https://eogqnedbdpjuptwlqudn.supabase.co';
+const SUPABASE_URL = 'https://sntxojhhtxfrwprmhrhy.supabase.co';
 const WRITE_CHUNK = 500;
 
 function getServiceKey() {

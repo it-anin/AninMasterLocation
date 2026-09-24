@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 11 — คนเดินตามเส้นทางไปยังโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* รวม 2 แบบเข้าด้วยกัน:
+       เส้นทางเดิน (จาก zone-anim/04) + ไอคอนคนเดิน (จาก zone-anim2/05)
+     ต่างจากเดิมตรงที่ "คนเดินตามเส้นจริงๆ" ไม่ได้เลื่อนเป็นเส้นตรงลัดข้ามผัง
+     ใช้ animateMotion ของ SVG ซึ่งเดินตาม path ให้เอง ไม่ต้องคำนวณพิกัดทีละเฟรม */
+
+  /* เส้นทางวาดตัวเองก่อน แล้วค่อยวิ่งเป็นเส้นประ */
+  #path {
+    stroke-dasharray: 14 10;
+    animation: draw .95s ease-out both, march 1s linear .95s infinite;
+  }
+  @keyframes draw  { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+  @keyframes march { to   { stroke-dashoffset: -24; } }
+
+  /* ตัวคน: ขาสลับซ้าย-ขวาตอนเดิน แล้วหยุดตอนถึงที่หมาย */
+  #legL { animation: stepL .46s ease-in-out infinite; transform-origin: 0 6px; }
+  #legR { animation: stepR .46s ease-in-out infinite; transform-origin: 0 6px; }
+  @keyframes stepL { 0%,100% { transform: rotate(16deg); } 50% { transform: rotate(-16deg); } }
+  @keyframes stepR { 0%,100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
+  #guy.done #legL, #guy.done #legR { animation: none; transform: rotate(0deg); }
+  /* ถึงที่หมายแล้วกระโดดดีใจ */
+  #guy.done { animation: cheer .42s ease-in-out 3; }
+  @keyframes cheer { 0%,100% { translate: 0 0; } 50% { translate: 0 -9px; } }
+
+  /* ธงปลายทางโผล่ตอนเดินถึง */
+  #goal { opacity: 0; transform: scale(.4); transform-box: fill-box; transform-origin: bottom center;
+          transition: opacity .3s, transform .4s cubic-bezier(.34,1.56,.64,1); }
+  #goal.on { opacity: 1; transform: scale(1); }
+
+  .trail  { fill: none; stroke: var(--ok); stroke-width: 7; stroke-linecap: round; }
+  .door   { fill: #fff; stroke: var(--ok); stroke-width: 4; }
+  .door-t { fill: var(--dim); font-size: 19px; text-anchor: middle;
+            font-family: system-ui, sans-serif; }
+  .g-head { fill: var(--ok); stroke: #fff; stroke-width: 2.5; }
+  .g-body { fill: var(--ok); }
+  .g-leg  { stroke: var(--ok); stroke-width: 5; stroke-linecap: round; }
+  .goal-c { fill: var(--ok); stroke: #fff; stroke-width: 4; }
+  .goal-stem { stroke: var(--ok); stroke-width: 4; stroke-dasharray: 5 5; opacity: .75; }
+  .goal-t { fill: #fff; font-weight: 800; text-anchor: middle;
+            dominant-baseline: central; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลังพร้อมเส้นทางเดิน">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      เส้นทางวาดตัวเองจากประตู แล้วคนเดิน<b>ตามเส้นจริงๆ</b> ไปจนถึงโซน
+      ขาสลับตอนเดิน พอถึงที่หมายก็หยุดแล้วกระโดด พร้อมธงบอกโซน
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone, timer = 0;
+  const DOOR = { x: 597, y: 372 };   // ประตูกลางล่างของภาพ
+  const AISLE_Y = 340;               // ทางเดินหน้าชั้นวาง
+  const WALK_MS = 2100;
+
+  function draw() {
+    clearTimeout(timer);
+    const cx = zoneMidX(zone);
+    const endY = RACK_BOTTOM + 10;
+    // เส้นทาง: ออกจากประตู → ขึ้นมาที่ทางเดิน → เลี้ยวไปตรงโซน → เข้าหาชั้นวาง
+    const d = `M${DOOR.x} ${DOOR.y} L${DOOR.x} ${AISLE_Y} L${cx} ${AISLE_Y} L${cx} ${endY}`;
+
+    document.getElementById('mark').innerHTML = `
+      <circle class="door" cx="${DOOR.x}" cy="${DOOR.y}" r="11"/>
+      <text class="door-t" x="${DOOR.x}" y="${DOOR.y + 32}">ทางเข้า</text>
+
+      <path id="path" class="trail" d="${d}"/>
+
+      <!-- ป้ายโซนลอยเหนือหัวคน — หัวคนอยู่ราว y=${endY - 39}
+           ป้ายจึงต้องอยู่สูงกว่านั้นพอสมควร ไม่งั้นทับกัน -->
+      <g id="goal">
+        <line class="goal-stem" x1="${cx}" y1="${endY - 96}" x2="${cx}" y2="${endY - 52}"/>
+        <circle class="goal-c" cx="${cx}" cy="${endY - 96}" r="24"/>
+        <text class="goal-t" x="${cx}" y="${endY - 96}" font-size="28">${zone}</text>
+      </g>
+
+      <g id="guy">
+        <circle class="g-head" cx="0" cy="-30" r="9"/>
+        <path class="g-body" d="M-7 -20 h14 l-2 16 h-10 Z"/>
+        <line id="legL" class="g-leg" x1="0" y1="-5" x2="-5" y2="7"/>
+        <line id="legR" class="g-leg" x1="0" y1="-5" x2="5"  y2="7"/>
+        <!-- เดินตาม path เดียวกับเส้นทาง ไม่ใช่เลื่อนเป็นเส้นตรง -->
+        <animateMotion id="mo" dur="${WALK_MS}ms" fill="freeze"
+                       begin="0.85s" path="${d}" rotate="0"/>
+      </g>`;
+
+    // เริ่มอนิเมชันใหม่ทุกครั้ง (animateMotion ไม่รีสตาร์ทเองเมื่อ DOM เปลี่ยน)
+    const mo = document.getElementById('mo');
+    if (mo.beginElement) { try { mo.beginElement(); } catch {} }
+
+    const guy = document.getElementById('guy');
+    timer = setTimeout(() => {
+      guy.classList.add('done');
+      document.getElementById('goal').classList.add('on');
+    }, 850 + WALK_MS);
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

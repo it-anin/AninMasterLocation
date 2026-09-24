@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 6 — กล้องซูมเข้าหาโซน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ซูมด้วยการ transition viewBox ทีละเฟรม — เหมือนกล้องค่อยๆ ขยับเข้าไป
+     จบแล้วเห็นแต่โซนนั้นเต็มจอ ไม่ต้องมีกรอบไฮไลท์เลย */
+  .mini { margin-top: 8px; }
+  .mini svg { display:block; width:100%; height:auto;
+              border:1px solid var(--line); border-radius:6px; }
+  .mini-lab { font-size:11px; color:var(--dim); margin-top:4px; }
+  .vp { fill:none; stroke:var(--ok); stroke-width:5; transition: all .9s cubic-bezier(.4,0,.2,1); }
+  .vp-dim { fill: rgba(255,255,255,.66); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" id="zoom" role="img" aria-label="ภาพซูมเข้าหาโซน">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+    </svg>
+
+    <div class="mini">
+      <svg viewBox="0 0 1280 417" role="img" aria-label="ตำแหน่งในผังรวม">
+        <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+        <path id="mdim" class="vp-dim" fill-rule="evenodd"/>
+        <rect id="vp" class="vp" rx="4"/>
+      </svg>
+      <div class="mini-lab">ตำแหน่งในผังรวม</div>
+    </div>
+
+    <div class="note">
+      กล้องค่อยๆ ซูมจากภาพรวมเข้าไปหาโซน คนดูไม่หลงว่าโซนนี้อยู่ตรงไหนของคลัง
+      จบแล้วเห็นเต็มตา ไม่ต้องมีกรอบให้ผิดเพี้ยน
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone, raf = 0;
+  const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+
+  function target() {
+    const [a, b] = zx(zone), pad = 46;
+    const vx = Math.max(0, a - pad);
+    return { x: vx, y: RACK_TOP - 24,
+             w: Math.min(IMG_W - vx, (b - a) + pad * 2),
+             h: (RACK_BOTTOM - RACK_TOP) + 60 };
+  }
+  function draw() {
+    cancelAnimationFrame(raf);
+    const from = { x: 0, y: 0, w: IMG_W, h: IMG_H };
+    const to = target();
+    const t0 = performance.now(), DUR = 900;
+    const svg = document.getElementById('zoom');
+    (function step(now) {
+      const k = ease(Math.min(1, (now - t0) / DUR));
+      const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k;
+      const w = from.w + (to.w - from.w) * k, h = from.h + (to.h - from.h) * k;
+      svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+      if (k < 1) raf = requestAnimationFrame(step);
+    })(t0);
+
+    document.getElementById('mdim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${to.x} ${to.y}H${to.x + to.w}V${to.y + to.h}H${to.x}Z`);
+    const vp = document.getElementById('vp');
+    vp.setAttribute('x', to.x); vp.setAttribute('y', to.y);
+    vp.setAttribute('width', to.w); vp.setAttribute('height', to.h);
+
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

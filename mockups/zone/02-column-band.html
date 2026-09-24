@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 2 — แถบแนวตั้งคลุมทั้งคอลัมน์</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* คลุมเป็นแถบตั้งเต็มความสูงภาพ ไม่พยายามตามขอบชั้นวาง
+     ขอบบน-ล่างไปจบที่ขอบภาพ เลยไม่มีทาง "เกิน" ให้เห็น */
+  .dim { fill: rgba(255,255,255,.76); }
+  .band { fill: rgba(4,120,87,.13); stroke: var(--ok); stroke-width: 3; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <path id="dim" class="dim" fill-rule="evenodd"/>
+      <rect id="band" class="band" rx="6"/>
+    </svg>
+    <div class="note">
+      แถบตั้งพาดเต็มความสูง จับแค่ตำแหน่งซ้าย-ขวาซึ่งวัดได้แม่น
+      ไม่ต้องรู้ว่าขอบบน-ล่างของชั้นวางเอียงแค่ไหน
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const [a, b] = zx(zone);
+    const pad = 6, x = a - pad, w = (b - a) + pad * 2;
+    document.getElementById('dim').setAttribute('d',
+      `M0 0H${IMG_W}V${IMG_H}H0Z M${x} 0H${x + w}V${IMG_H}H${x}Z`);
+    const band = document.getElementById('band');
+    band.setAttribute('x', x); band.setAttribute('y', 2);
+    band.setAttribute('width', w); band.setAttribute('height', IMG_H - 4);
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>

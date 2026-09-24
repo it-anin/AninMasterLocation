@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 4 — เส้นทางเดินวิ่งจากประตู</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* เส้นประวิ่งจากประตูไปหาโซน — บอก "เดินยังไง" ไม่ใช่แค่ "อยู่ไหน"
+     เหมาะกับพนักงานใหม่ที่ยังไม่ชินผัง */
+  #path {
+    stroke-dasharray: 14 10;
+    animation: draw 1.1s ease-out both, march 1s linear 1.1s infinite;
+  }
+  @keyframes draw { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+  @keyframes march { to { stroke-dashoffset: -24; } }
+  #goal { animation: pop .4s 1s cubic-bezier(.34,1.56,.64,1) both; transform-box: fill-box; transform-origin: center; }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .trail { fill: none; stroke: var(--ok); stroke-width: 7; stroke-linecap: round; }
+  .goal-c { fill: var(--ok); stroke: #fff; stroke-width: 4; }
+  .goal-t { fill: #fff; font-weight: 800; text-anchor: middle;
+            dominant-baseline: central; font-family: system-ui, sans-serif; }
+  .door { fill: #fff; stroke: var(--ok); stroke-width: 4; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลังพร้อมเส้นทางเดิน">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      เส้นประวิ่งจากประตูไปยังโซน บอกว่า "เดินยังไง" ไม่ใช่แค่ "อยู่ไหน"
+      เหมาะกับพนักงานใหม่ที่ยังไม่ชินผังคลัง
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  const DOOR = { x: 597, y: 372 };   // ประตูกลางล่างของภาพ
+  function draw() {
+    const cx = zoneMidX(zone);
+    const aisleY = 340;              // ทางเดินหน้าชั้นวาง
+    const endY = RACK_BOTTOM + 8;
+    const d = `M${DOOR.x} ${DOOR.y} L${DOOR.x} ${aisleY} L${cx} ${aisleY} L${cx} ${endY}`;
+    document.getElementById('mark').innerHTML = `
+      <circle class="door" cx="${DOOR.x}" cy="${DOOR.y}" r="11"/>
+      <path id="path" class="trail" d="${d}"/>
+      <g id="goal">
+        <circle class="goal-c" cx="${cx}" cy="${endY - 26}" r="26"/>
+        <text class="goal-t" x="${cx}" y="${endY - 26}" font-size="30">${zone}</text>
+      </g>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(draw));
+</script>
+</body>
+</html>

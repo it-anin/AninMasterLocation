@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 5 — โหมดสว่าง (กลางแจ้ง)</title>
+<style>
+  /* ออกแบบสำหรับคลังที่แสงจ้า — คอนทราสต์สูง ตัวหนา ไม่มีสีจาง */
+  :root{--bg:#ffffff;--ink:#0b1622;--dim:#4a5b6c;--line:#c7d2dd;
+        --ok:#047857;--okbg:#d1fae5;--hit:#065f46}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Noto Sans Thai",system-ui,sans-serif}
+  .pda{max-width:480px;margin:0 auto;padding:10px}
+  .scan{width:100%;padding:13px;border-radius:8px;border:2px solid var(--ink);
+        font-size:16px;font-weight:600}
+  .card{margin-top:10px;border:3px solid var(--ok);border-radius:12px;overflow:hidden}
+  .bar{background:var(--ok);color:#fff;padding:10px 12px;display:flex;
+       align-items:baseline;justify-content:space-between}
+  .bar b{font-size:46px;line-height:1;letter-spacing:1px}
+  .bar span{font-size:13px;font-weight:600}
+  .body{padding:12px}
+
+  .rows{display:flex;flex-direction:column-reverse;gap:5px}
+  .r{display:flex;gap:5px;align-items:center}
+  .r .n{width:30px;height:34px;flex:none;border:2px solid var(--line);border-radius:6px;
+        display:grid;place-items:center;font-size:15px;font-weight:800;color:var(--dim)}
+  .r .cs{flex:1;display:flex;gap:5px}
+  .c{flex:1;height:34px;border:2px solid var(--line);border-radius:6px;
+     display:grid;place-items:center;font-size:12px;font-weight:700;color:#8296a8}
+  .r.on .n{background:var(--ok);border-color:var(--ok);color:#fff}
+  .r.on .c{border-color:var(--ok);background:var(--okbg);color:var(--hit)}
+  .c.hit{background:var(--hit);border-color:var(--hit);color:#fff;font-size:13px}
+
+  .tip{margin-top:10px;padding:8px 10px;background:#f1f5f9;border-radius:8px;
+       font-size:12px;color:var(--dim);display:flex;justify-content:space-between}
+  .name{margin-top:12px;font-size:18px;font-weight:700;line-height:1.35}
+  .meta{margin-top:6px;font-size:13px;color:var(--dim);font-weight:500}
+  .btn{margin-top:12px;width:100%;padding:14px;border:0;border-radius:8px;
+       background:var(--ink);color:#fff;font-size:16px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pda">
+  <input class="scan" placeholder="ยิงบาร์โค้ดได้เลย">
+  <div class="card">
+    <div class="bar"><b id="code"></b><span id="sub"></span></div>
+    <div class="body">
+      <div class="rows" id="rows"></div>
+      <div class="tip"><span>ชั้น 1 = ล่างสุด</span><span id="cnt"></span></div>
+      <div class="name" id="name"></div>
+      <div class="meta" id="meta"></div>
+      <button class="btn">✏️ แก้ไขตำแหน่ง</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const d = DEMO;
+  document.getElementById('code').textContent = d.code;
+  document.getElementById('sub').innerHTML = `โซน ${d.zone} · ชั้น ${d.shelf} · ช่อง ${d.slot}`;
+
+  const rows = document.getElementById('rows');
+  const n = slotsOf(d.zone);
+  for (let s = 1; s <= SHELVES; s++) {
+    const on = s === d.shelf;
+    const cs = Array.from({length:n}, (_,i) => {
+      const hit = on && i+1 === d.slot;
+      return `<div class="c${hit?' hit':''}">${hit ? d.code : i+1}</div>`;
+    }).join('');
+    const r = document.createElement('div');
+    r.className = 'r' + (on ? ' on' : '');
+    r.innerHTML = `<div class="n">${s}</div><div class="cs">${cs}</div>`;
+    rows.appendChild(r);
+  }
+
+  document.getElementById('cnt').textContent = `โซน ${d.zone} มี ${n} ช่องต่อชั้น`;
+  document.getElementById('name').textContent = d.name;
+  document.getElementById('meta').textContent = `${d.item_id} · ${d.unit} · ${d.barcode}`;
+</script>
+</body>
+</html>

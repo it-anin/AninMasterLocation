@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 1 — ไฟฉายส่องในคลังมืด</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* กลับด้านจากแบบสปอตไลต์ขาว — คลังมืดสนิท แล้วส่องไฟฉายหาของ
+     คอนทราสต์สูงมาก โซนเป้าหมายเด่นสุดขีด */
+  #beam { animation: seek 1.2s cubic-bezier(.45,.05,.2,1) both; }
+  @keyframes seek {
+    0%   { transform: translateX(-300px) scale(1.9); }
+    55%  { transform: translateX(110px) scale(1.15); }
+    100% { transform: translateX(0) scale(1); }
+  }
+  .dark { fill: rgba(6,20,30,.88); }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <defs>
+        <radialGradient id="torch">
+          <stop offset="0%"   stop-color="#000" stop-opacity="1"/>
+          <stop offset="62%"  stop-color="#000" stop-opacity=".92"/>
+          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+        </radialGradient>
+        <mask id="tm">
+          <rect x="0" y="0" width="1280" height="417" fill="#fff"/>
+          <g id="beam"><ellipse id="hole" fill="url(#torch)"/></g>
+        </mask>
+      </defs>
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <rect class="dark" x="0" y="0" width="1280" height="417" mask="url(#tm)"/>
+    </svg>
+    <div class="note">
+      คลังมืดสนิทแล้วส่องไฟฉายกวาดหา จนไปหยุดที่โซนเป้าหมาย
+      คอนทราสต์สูงที่สุดในบรรดาทุกแบบ — เห็นชัดแม้มองแวบเดียว
+    </div>
+    <div id="picker"></div>
+    <div id="rp"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const h = document.getElementById('hole');
+    h.setAttribute('cx', zoneMidX(zone));
+    h.setAttribute('cy', (RACK_TOP + RACK_BOTTOM) / 2);
+    h.setAttribute('rx', Math.max(80, zoneW(zone) * 1.25));
+    h.setAttribute('ry', 165);
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+    replay();
+  }
+  function replay() {
+    const el = document.getElementById('beam');
+    el.style.animation = 'none'; void el.getBoundingClientRect(); el.style.animation = '';
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+  document.getElementById('rp').appendChild(replayBtn(replay));
+</script>
+</body>
+</html>

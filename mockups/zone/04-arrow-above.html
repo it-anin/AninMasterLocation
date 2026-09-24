@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แบบ 4 — ลูกศรชี้จากด้านบน</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ลูกศรลอยเหนือชั้นวาง ไม่แตะตัวชั้นวาง — เรียบที่สุดในบรรดา 10 แบบ */
+  .arrow { fill: var(--ok); }
+  .arrow-t { fill: var(--ok); font-weight: 800; text-anchor: middle;
+             font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="pda">
+  <div class="head"><b id="code"></b><span>ตำแหน่งจัดเก็บ</span></div>
+  <div class="sub" id="sub"></div>
+
+  <div class="card">
+    <svg class="plan" viewBox="0 0 1280 417" role="img" aria-label="ผังคลัง">
+      <image href="wh.jpg" x="0" y="0" width="1280" height="417"/>
+      <g id="mark"></g>
+    </svg>
+    <div class="note">
+      ไม่ลดความสว่างของภาพเลย — ภาพยังอ่านง่ายเหมือนเดิม
+      ใช้ลูกศรตัวใหญ่ชี้ลงมาแทน เหมาะกับคลังที่แสงจ้าจนภาพจางอยู่แล้ว
+    </div>
+    <div id="picker"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  let zone = DEMO.zone;
+  function draw() {
+    const cx = zoneMidX(zone);
+    const tipY = RACK_TOP + 6;       // ปลายลูกศรจ่อหัวชั้นวาง
+    const w = 34, h = 40;
+    document.getElementById('mark').innerHTML = `
+      <path class="arrow" d="M${cx} ${tipY}
+        L${cx - w / 2} ${tipY - h} L${cx - 13} ${tipY - h}
+        L${cx - 13} ${tipY - h - 34} L${cx + 13} ${tipY - h - 34}
+        L${cx + 13} ${tipY - h} L${cx + w / 2} ${tipY - h} Z"/>
+      <text class="arrow-t" x="${cx}" y="${tipY - h - 46}" font-size="40">${zone}</text>`;
+    document.getElementById('code').textContent = zone + DEMO.shelf + DEMO.slot;
+    document.getElementById('sub').textContent =
+      `โซน ${zone} · เชลฟ์ที่ ${DEMO.shelf} · ชั้นที่ ${DEMO.slot}`;
+  }
+  draw();
+  document.getElementById('picker').appendChild(zonePicker(z => { zone = z; draw(); }, zone));
+</script>
+</body>
+</html>
