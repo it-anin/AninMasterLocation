@@ -117,6 +117,8 @@ main { flex: 1; overflow: auto; }
   font: inherit;
   cursor: pointer;
 }
+/* <a class="btn"> — ลิงก์ที่หน้าตาเป็นปุ่ม (เช่น ลิงก์ไป Google Sheet) */
+a.btn { display: inline-block; box-sizing: border-box; text-align: center; text-decoration: none; }
 .btn:hover:not(:disabled) { background: var(--inset); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }

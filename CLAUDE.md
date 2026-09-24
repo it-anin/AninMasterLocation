@@ -18,6 +18,8 @@
 
 3. **`SUPABASE_SERVICE_KEY` ห้ามขึ้นต้นด้วย `VITE_`** เพราะ Vite จะฝังลง bundle
    ให้ทุกคนที่เปิดเว็บเห็น key ที่ข้ามผ่าน RLS ได้ทั้งหมด
+   **และห้ามใส่ใน Apps Script ของ Google Sheet** (`sheet/Code.gs` ใช้ anon key เท่านั้น)
+   ใครที่เปิด Apps Script ได้จะเห็น key และ key นี้เข้าถึงฐาน POS ใน `public` ได้ด้วย
 
 4. **ห้ามกรองบาร์โค้ด/SKU ด้วยเกณฑ์ความยาวหรือ "ต้องเป็นตัวเลข"**
    มี 410 บาร์โค้ดที่สั้นกว่า 6 ตัวอักษรแต่เป็นสินค้าจริง (รหัส `A001`, `S00126`, `D0037`)
@@ -60,6 +62,31 @@
 |---|---|
 | `src/**` (React/TS/CSS) | ❌ ไม่ต้อง — Vercel auto-deploy แล้ว WebView โหลดใหม่ตอนเปิดแอป |
 | `android/**` | ✅ ต้อง — native code |
+| `sheet/**` | ❌ ไม่ต้อง — แต่ต้องวางโค้ดทับใน Apps Script editor ของชีตเอง (ไม่ deploy อัตโนมัติ) |
+
+---
+
+## แก้ตำแหน่งผ่าน Google Sheet
+
+เมื่อตั้ง `VITE_LOCATION_SHEET_URL` แล้ว **Google Sheet คือที่แก้ตำแหน่งที่เดียว**
+ปุ่มแก้ตำแหน่งในเว็บและ PDA ถูกซ่อน (ปล่อยค่าว่าง = กลับไปแก้ในเว็บแบบเดิม)
+
+```
+แก้ในชีต ─┬─ ทันที (onEditInstallable)  → ส่งแถวที่แก้ ─┐
+          └─ ทุก 10 นาที (reconcile)    → ส่งทั้งชีต  ─┴→ anin_loc.sheet_apply() → item_locations
+```
+
+**ทางเดียว ชีต → DB** ไม่มีการดึงตำแหน่งจาก DB กลับไปทับชีต
+ชีตจึงชนะเสมอ: **ค่าที่แก้ใน DB ตรงๆ หรือจาก `import:locations` จะถูก reconcile เขียนทับกลับ**
+
+การป้องกันที่ต้องรักษาไว้ถ้าแก้ `sheet/Code.gs` (ทุกข้อมาจากปัญหาจริงของสเปรดชีต):
+- ตั้ง format ข้อความ (`@`) **ก่อน** เขียนข้อมูล — ไม่งั้น 0 นำหน้าหาย · `3-1` เป็นวันที่
+- ช่องตำแหน่งที่ `getValues()` ได้ไม่ใช่ string = ชีตแปลงไปแล้ว → ไม่ส่ง
+- เพดาน: แก้ครั้งเดียว ≤ 200 · reconcile ≤ 50 — กันเลือกทั้งคอลัมน์แล้วกด Delete / sort คอลัมน์เดียว
+- ลบทั้งแถวในชีต = รายงานอย่างเดียว ไม่ลบใน DB
+- `sheet_apply` คืน jsonb ก้อนเดียว ไม่ใช่ table — PostgREST ตัดผลที่ 1,000 แถว
+
+วิธีติดตั้งและข้อจำกัด → [sheet/README.md](sheet/README.md)
 
 ---
 
@@ -179,6 +206,8 @@ cp .env.example .env        # แล้วเติมค่าจาก Supabas
 | `0002_rls.sql` | เปิด RLS + grant ให้ `anon` |
 | `0003_service_role_grants.sql` | grant ให้ `service_role` (สคริปต์ import ใช้) |
 | `0004_shelf_slot.sql` | แยก เชลฟ์/ชั้น — นิยาม `zone`/`aisle`/`slot` ใหม่ |
+| `0005_search_by_zone.sql` | กรองรายการตามโซนในหน้าจัดการ |
+| `0006_sheet_sync.sql` | `sheet_apply()` สำหรับ Google Sheet + ประวัติบันทึก `source = 'sheet'` |
 
 จากนั้น **Settings → API → Exposed schemas → เพิ่ม `anin_loc`** ← ลืมบ่อยที่สุด
 ถ้าไม่ทำจะเจอ `The schema must be one of the following: public`
@@ -198,6 +227,10 @@ npm run import:locations        # เขียน item_locations
 `import` รันซ้ำได้ปลอดภัย — แตะแค่ `items`/`barcodes` ไม่แตะ `item_locations`
 แต่ **`import:locations` เขียนทับ** ถ้ารันหลังพนักงานเริ่มแก้ตำแหน่งในเว็บแล้ว
 ค่าที่แก้จะถูกเขียนทับด้วยค่าจากไฟล์ — ใช้ seed ชุดแรกเท่านั้น
+**หลังเปิดใช้ Google Sheet แล้วห้ามรันอีก** — reconcile จะเขียนค่าจากชีตทับกลับ
+
+หลัง `npm run import` มีสินค้าใหม่ → ในชีตกดเมนู **📦 ตำแหน่ง → อัปเดตจากระบบ**
+ไม่งั้นสินค้าใหม่ไม่มีแถวให้กรอกตำแหน่ง
 
 ---
 
@@ -263,6 +296,9 @@ RLS เปิดอยู่แต่ policy อนุญาต `anon` ทำไ
 ถ้าภายหลังต้องการความเข้มงวดขึ้น → ย้ายไป Supabase Auth แล้วเปลี่ยน `to anon`
 เป็น `to authenticated` ใน `0002_rls.sql`
 
+**Google Sheet:** ใครมีสิทธิ์ Editor ในชีต = แก้ตำแหน่งในระบบได้ — คุมสิทธิ์ที่ปุ่ม Share ของชีต
+ชื่อคนแก้ได้เป็นอีเมลจริงเฉพาะบัญชี Google Workspace โดเมนเดียวกัน ไม่งั้นบันทึกเป็น `google-sheet`
+
 ---
 
 ## โครงสร้างไฟล์
@@ -290,6 +326,10 @@ src/
     rack-front.png           ชั้นวางหลัก 850×395 (6 ชั้น 6 ช่อง)
     rack-zone-a.png          ชั้นเตี้ยโซน A 770×395 (2 ช่อง)
     anin-logo.png            โลโก้ 200×63
+
+sheet/                       Google Sheet — ที่แก้ตำแหน่งที่เดียว (วางโค้ดใน Apps Script เอง)
+  Code.gs                    ซิงก์ชีต → DB ผ่าน sheet_apply() + เพดานความปลอดภัย
+  README.md                  วิธีติดตั้ง · ความหมายสถานะ · ข้อจำกัด
 
 docs/คำศัพท์.md              คำศัพท์ที่ใช้ร่วมกัน — อ่านก่อนคุยเรื่องผัง
 mockups/                     แบบหน้าจอที่ทำไว้เทียบ (ไม่ได้ใช้ใน production)

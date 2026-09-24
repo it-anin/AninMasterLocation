@@ -3,6 +3,8 @@ import { WarehouseMiniMap } from './WarehouseMiniMap';
 import { WarehouseFloorPlan, FLOOR_PLAN_ZONES } from './WarehouseFloorPlan';
 import { ShelfFront, SHELF_ZONES, isMirroredZone } from './ShelfFront';
 import type { LookupResult, MapCell } from '../lib/queries';
+import { LOCATION_SHEET_URL } from '../lib/supabase';
+import { isAndroidMode } from '../lib/useScanner';
 
 /**
  * การ์ดผลลัพธ์ — ผังคลัง + ภาพชั้นวาง + รายละเอียดสินค้า
@@ -115,9 +117,19 @@ export function LocationResult({ found, mapCells, onEdit }: Props) {
         </div>
       )}
 
-      <button className="btn btn-primary" onClick={onEdit}>
-        {found.location ? 'แก้ไขตำแหน่ง' : '➕ กำหนดตำแหน่ง'}
-      </button>
+      {/* โหมด Google Sheet: แก้ได้ที่ชีตที่เดียว ไม่เปิด EditLocationDialog
+          บน PDA ไม่ใส่ลิงก์ — เปิดชีตในจอ 480px ใช้งานไม่ได้จริง */}
+      {!LOCATION_SHEET_URL ? (
+        <button className="btn btn-primary" onClick={onEdit}>
+          {found.location ? 'แก้ไขตำแหน่ง' : '➕ กำหนดตำแหน่ง'}
+        </button>
+      ) : isAndroidMode ? (
+        <div className="meta-small">แก้ตำแหน่งได้ที่ Google Sheet บนคอมพิวเตอร์</div>
+      ) : (
+        <a className="btn btn-primary" href={LOCATION_SHEET_URL} target="_blank" rel="noreferrer">
+          แก้ตำแหน่งใน Google Sheet ↗
+        </a>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   type SearchRow,
 } from '../lib/queries';
 import { getStaff } from '../lib/auth';
+import { LOCATION_SHEET_URL } from '../lib/supabase';
 import { EditLocationDialog } from '../components/EditLocationDialog';
 import { FLOOR_PLAN_ZONES } from '../components/WarehouseFloorPlan';
 
@@ -116,6 +117,11 @@ export function ProductTable() {
             {progress.total ? Math.round((progress.filled / progress.total) * 100) : 0}%)
           </div>
         )}
+        {LOCATION_SHEET_URL && (
+          <a className="btn btn-primary" href={LOCATION_SHEET_URL} target="_blank" rel="noreferrer">
+            แก้ตำแหน่งใน Google Sheet ↗
+          </a>
+        )}
       </div>
 
       {/* กรองตามโซน — ใช้คอลัมน์ zone ที่แยกไว้แล้ว ไม่ใช่ค้นข้อความใน location
@@ -193,10 +199,14 @@ export function ProductTable() {
                 </td>
                 <td className="cell-sub">{r.updated_by ?? '—'}</td>
                 <td className="actions">
-                  <button className="btn btn-sm" onClick={() => setEditing(r)}>
-                    แก้ไข
-                  </button>
-                  {r.location && (
+                  {/* โหมด Google Sheet: แก้/ลบตำแหน่งที่ชีตเท่านั้น
+                      ถ้าแก้ตรงนี้ รอบซิงก์ของชีตจะเขียนทับกลับอยู่ดี */}
+                  {!LOCATION_SHEET_URL && (
+                    <button className="btn btn-sm" onClick={() => setEditing(r)}>
+                      แก้ไข
+                    </button>
+                  )}
+                  {!LOCATION_SHEET_URL && r.location && (
                     <button className="btn btn-sm" onClick={() => handleClearLocation(r)}>
                       ลบตำแหน่ง
                     </button>
