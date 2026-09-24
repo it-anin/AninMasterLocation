@@ -283,6 +283,7 @@ cp .env.example .env        # แล้วเติมค่าจาก Supabas
 | `0004_shelf_slot.sql` | แยก เชลฟ์/ชั้น — นิยาม `zone`/`aisle`/`slot` ใหม่ |
 | `0005_search_by_zone.sql` | กรองรายการตามโซนในหน้าจัดการ |
 | `0006_sheet_sync.sql` | `sheet_apply()` สำหรับ Google Sheet + ประวัติบันทึก `source = 'sheet'` |
+| `0007_deleted_items.sql` | `delete_item()` + ตาราง `deleted_items` — สินค้าที่ลบแล้ว import ไม่เพิ่มกลับ |
 
 จากนั้น **Settings → API → Exposed schemas → เพิ่ม `anin_loc`** ← ลืมบ่อยที่สุด
 ถ้าไม่ทำจะเจอ `The schema must be one of the following: public`
@@ -306,6 +307,13 @@ npm run import:locations        # เขียน item_locations
 
 หลัง `npm run import` มีสินค้าใหม่ → ในชีตกดเมนู **📦 ตำแหน่ง → อัปเดตจากระบบ**
 ไม่งั้นสินค้าใหม่ไม่มีแถวให้กรอกตำแหน่ง
+
+**สินค้าที่กด "ลบสินค้า" ในหน้าจัดการ `import` จะข้ามไป** แม้ยังอยู่ใน `R05.106.CSV`
+ปุ่มลบเรียก `anin_loc.delete_item()` ซึ่งจดรหัสลง `anin_loc.deleted_items` แล้ว `import` ข้ามรหัสในตารางนั้น
+**ห้ามลบ `items` ตรงด้วย `.delete()`** — ไม่ได้จดรหัส สินค้าจะกลับมาตอน import รอบหน้า
+`import` อ่าน `deleted_items` ไม่ได้ (เช่น ยังไม่รัน `0007`) = หยุดทันที ไม่ import ต่อ
+เอาสินค้ากลับ: `delete from anin_loc.deleted_items where item_id = '...'` แล้ว `npm run import`
+(กลับมาแค่ชื่อ/บาร์โค้ด ตำแหน่งเดิมหายไปแล้ว)
 
 ---
 

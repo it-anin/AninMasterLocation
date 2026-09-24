@@ -79,12 +79,13 @@ export function ProductTable() {
       !confirm(
         `ลบสินค้า "${row.name}" ออกจากระบบ?\n\n` +
           `บาร์โค้ด ${row.barcodes.length} รายการและตำแหน่งจัดเก็บจะถูกลบไปด้วย\n` +
+          `การ import ข้อมูลจาก ProMaxx ครั้งต่อไปจะไม่เพิ่มสินค้านี้กลับมา\n` +
           `การลบนี้ย้อนกลับไม่ได้`
       )
     )
       return;
     try {
-      await deleteItem(row.item_id);
+      await deleteItem(row.item_id, getStaff() || 'ไม่ระบุ');
       load();
     } catch (e) {
       alert((e as Error).message);

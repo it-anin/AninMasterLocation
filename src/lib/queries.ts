@@ -266,8 +266,11 @@ export async function createItem(opts: {
   if (e2) throw new Error(e2.message);
 }
 
-export async function deleteItem(itemId: string) {
-  // barcodes และ item_locations มี ON DELETE CASCADE จึงหายตามไปเอง
-  const { error } = await supabase.from('items').delete().eq('item_id', itemId);
+/**
+ * ลบผ่าน delete_item() ไม่ลบตาราง items ตรง — ต้องจดรหัสลง deleted_items ด้วย
+ * ไม่งั้น npm run import จะเพิ่มสินค้ากลับมา (ดู 0007_deleted_items.sql)
+ */
+export async function deleteItem(itemId: string, deletedBy: string) {
+  const { error } = await supabase.rpc('delete_item', { p_item_id: itemId, p_by: deletedBy });
   if (error) throw new Error(error.message);
 }

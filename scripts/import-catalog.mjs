@@ -6,10 +6,11 @@
  *       node scripts/import-catalog.mjs "D:\path\to\R05.106.CSV"
  *       node scripts/import-catalog.mjs --dry-run      ← ตรวจไฟล์อย่างเดียว ไม่เขียน DB
  *
- * ต้องรัน supabase/migrations/0001_schema.sql และ 0002_rls.sql ก่อน
+ * ต้องรัน supabase/migrations/0001_schema.sql, 0002_rls.sql และ 0007_deleted_items.sql ก่อน
  *
- * ⚠️ สคริปต์นี้แตะแค่ตาราง items และ barcodes เท่านั้น
+ * ⚠️ สคริปต์นี้เขียนแค่ตาราง items และ barcodes เท่านั้น
  *    ไม่แตะ item_locations เลย — รันซ้ำได้ปลอดภัย location ที่กรอกไว้ไม่หาย
+ *    ข้ามสินค้าที่อยู่ใน deleted_items (ลบจากหน้าจัดการแล้ว) แม้ยังอยู่ใน CSV
  *
  * CSV columns ที่ใช้ (จากทั้งหมด 27 คอลัมน์):
  *   CF_BARCODE                 บาร์โค้ด (unique ทุกแถว)
@@ -141,6 +142,30 @@ function buildRecords(rows) {
   return { items: [...itemsMap.values()], barcodes, stats };
 }
 
+/**
+ * รหัสสินค้าที่ลบจากหน้าจัดการแล้ว (0007_deleted_items.sql)
+ * อ่านไม่ได้ = หยุดเลย — import ต่อไปจะเพิ่มสินค้าที่ลบแล้วกลับมาเงียบๆ
+ */
+async function loadDeletedIds(sb) {
+  const ids = new Set();
+  const PAGE = 1000; // PostgREST คืนได้ครั้งละไม่เกิน 1,000 แถว
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from('deleted_items')
+      .select('item_id')
+      .order('item_id')
+      .range(from, from + PAGE - 1);
+    if (error) {
+      throw new Error(
+        `อ่านรายการสินค้าที่ถูกลบไม่ได้: ${error.message}\n` +
+          '   ถ้ายังไม่ได้รัน supabase/migrations/0007_deleted_items.sql ให้รันใน SQL Editor ก่อน'
+      );
+    }
+    data.forEach((r) => ids.add(r.item_id));
+    if (data.length < PAGE) return ids;
+  }
+}
+
 async function upsertChunked(sb, table, list, onConflict) {
   let done = 0;
   for (let i = 0; i < list.length; i += WRITE_CHUNK) {
@@ -169,7 +194,21 @@ async function main() {
   const rows = parseCsv(csvPath);
   console.log(`   อ่านได้ ${rows.length.toLocaleString()} แถว`);
 
-  const { items, barcodes, stats } = buildRecords(rows);
+  const built = buildRecords(rows);
+  const { stats } = built;
+
+  const key = getServiceKey();
+  const sb = key
+    ? createClient(SUPABASE_URL, key, {
+        db: { schema: 'anin_loc' },      // ⚠️ ห้ามชี้ public — public คือฐาน POS จริง
+        auth: { persistSession: false },
+      })
+    : null;
+
+  // สินค้าที่ลบจากหน้าจัดการแล้ว — ไม่เพิ่มกลับ แม้ยังอยู่ใน ProMaxx
+  const deleted = sb ? await loadDeletedIds(sb) : null;
+  const items = deleted ? built.items.filter((i) => !deleted.has(i.item_id)) : built.items;
+  const barcodes = deleted ? built.barcodes.filter((b) => !deleted.has(b.item_id)) : built.barcodes;
 
   console.log('\n📊 สรุปข้อมูลที่จะนำเข้า');
   console.log(`   สินค้า (items)     : ${items.length.toLocaleString()}`);
@@ -178,6 +217,14 @@ async function main() {
     `   ข้าม               : ${stats.blank} ว่าง · ${stats.tooShort} สั้นเกิน · ` +
       `${stats.dupBarcode} ซ้ำ · ${stats.noItemId} ไม่มี id/ชื่อ`
   );
+  if (deleted) {
+    console.log(
+      `   ข้ามสินค้าที่ถูกลบ   : ${built.items.length - items.length} สินค้า ` +
+        `(${built.barcodes.length - barcodes.length} บาร์โค้ด) — ดู anin_loc.deleted_items`
+    );
+  } else {
+    console.log('   ข้ามสินค้าที่ถูกลบ   : ยังไม่ได้เช็ค (ไม่มี SUPABASE_SERVICE_KEY)');
+  }
 
   // sanity check เทียบกับค่าที่สำรวจไฟล์ไว้
   const leadingZero = barcodes.filter((b) => b.barcode.startsWith('0')).length;
@@ -201,8 +248,7 @@ async function main() {
     return;
   }
 
-  const key = getServiceKey();
-  if (!key) {
+  if (!sb) {
     console.error('\n❌ ไม่พบ SUPABASE_SERVICE_KEY');
     console.error('   สร้างไฟล์ .env ที่ root ของโปรเจกต์ แล้วใส่:');
     console.error('   SUPABASE_SERVICE_KEY=<service_role key จาก Supabase Dashboard>');
@@ -210,11 +256,6 @@ async function main() {
     console.error('      ห้ามใส่ในเว็บหรือ commit ลง git เด็ดขาด');
     process.exit(1);
   }
-
-  const sb = createClient(SUPABASE_URL, key, {
-    db: { schema: 'anin_loc' },      // ⚠️ ห้ามชี้ public — public คือฐาน POS จริง
-    auth: { persistSession: false },
-  });
 
   console.log('\n⬆️  กำลังอัปโหลด...');
   // items ต้องมาก่อนเสมอ เพราะ barcodes.item_id มี FK ชี้มา
@@ -241,5 +282,6 @@ async function main() {
 
 main().catch((e) => {
   console.error('\n❌ ล้มเหลว:', e.message);
-  process.exit(1);
+  // exitCode แทน process.exit() — exit ทันทีตอน fetch ยังปิดไม่เสร็จ ทำ Node บน Windows assert พัง
+  process.exitCode = 1;
 });
