@@ -64,6 +64,35 @@
 | `android/**` | ✅ ต้อง — native code |
 | `sheet/**` | ❌ ไม่ต้อง — แต่ต้องวางโค้ดทับใน Apps Script editor ของชีตเอง (ไม่ deploy อัตโนมัติ) |
 
+### Build APK — ไม่ต้องใช้ Android Studio ก็ได้
+
+Build จริงๆ คือ Gradle ตัวเดียวกันไม่ว่าเรียกจากที่ไหน **ไม่จำเป็นต้องเปิด Android Studio** เพื่อ build APK ธรรมดา:
+
+```bash
+cd android
+./gradlew assembleDebug
+# ได้ไฟล์ที่ android/app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+**จำเป็นต้องเปิด Android Studio เมื่อ:**
+- แก้โค้ด Kotlin ที่ต้องการ autocomplete/IntelliSense (VSCode มี extension แต่ไม่ดีเท่า)
+- debug บนเครื่องจริงแบบ breakpoint/Logcat/Layout Inspector
+- จัดการ Android SDK / AVD (SDK Manager ในตัว ติดตั้งง่ายกว่าจัดการเอง)
+- อ่าน error message ที่ตีความยาก (บาง error กด "Fix with AI" ได้ในตัว)
+
+**ไม่จำเป็นต้องเปิด Android Studio เมื่อ:**
+- แค่ต้องการ build APK ไฟล์ใหม่หลังแก้ `MainActivity.kt` เสร็จแล้ว
+- ติดตั้ง APK ลงเครื่อง PDA (`adb install -r`)
+- เช็คว่าโค้ด compile ผ่านไหม (`./gradlew compileDebugKotlin`)
+
+> ⚠️ **Gradle wrapper ต้องตรงรุ่นกับ Android Gradle Plugin (AGP)** — โปรเจกต์นี้ใช้ AGP 8.2.2
+> คู่กับ **Gradle 8.2** (ตั้งไว้ใน `gradle/wrapper/gradle-wrapper.properties`)
+> เคย auto-upgrade เป็น Gradle 9.3.0 มาแล้วครั้งหนึ่งและพังทันที ด้วย error
+> `Cannot mutate the dependencies of configuration ... after the configuration was resolved`
+> (Gradle 9 เข้มงวดเรื่อง configuration resolution กว่า AGP 8.2.2 ที่ออกมาก่อนจะรองรับ)
+> ถ้าเจอ error แบบนี้อีก ให้เช็ค `distributionUrl` ใน `gradle-wrapper.properties` ก่อนอย่างอื่น
+
 ---
 
 ## Deploy (Vercel)
