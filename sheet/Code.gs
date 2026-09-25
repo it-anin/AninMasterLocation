@@ -25,9 +25,11 @@ const SHEET_MAIN = 'ตำแหน่ง';
 const SHEET_LOCS = 'รายการตำแหน่ง';
 const SHEET_LOG = 'บันทึกซิงก์';
 
-const COL = { ITEM: 1, NAME: 2, CATEGORY: 3, BARCODES: 4, LOCATION: 5, NOTE: 6, STATUS: 7, UPDATED: 8 };
-const HEADERS = ['รหัสสินค้า', 'ชื่อสินค้า', 'หมวด', 'บาร์โค้ด', 'ตำแหน่ง ✏️', 'หมายเหตุ ✏️', 'สถานะ', 'แก้ล่าสุด'];
-const WIDTHS = [100, 320, 140, 170, 110, 180, 270, 210];
+// ⚠️ ทุกคอลัมน์ก่อน LOCATION = ระบบเขียนเอง · LOCATION/NOTE ต้องติดกัน · STATUS/UPDATED ต้องติดกัน
+//    ย้ายคอลัมน์ = แก้ 3 บรรทัดนี้ แล้วสร้างแท็บ "ตำแหน่ง" ใหม่ (ดู README หัวข้อเปลี่ยนโครงคอลัมน์)
+const COL = { ITEM: 1, BARCODES: 2, NAME: 3, UNITS: 4, CATEGORY: 5, LOCATION: 6, NOTE: 7, STATUS: 8, UPDATED: 9 };
+const HEADERS = ['รหัสสินค้า', 'บาร์โค้ด', 'ชื่อสินค้า', 'หน่วย', 'หมวด', 'ตำแหน่ง ✏️', 'หมายเหตุ ✏️', 'สถานะ', 'แก้ล่าสุด'];
+const WIDTHS = [100, 170, 320, 110, 140, 110, 180, 270, 210];
 const NUM_COLS = HEADERS.length;
 
 /** แก้ในชีตครั้งเดียว (วาง/ลบหลายช่อง) เปลี่ยนได้ไม่เกินนี้ — เกินต้องยืนยันผ่านเมนู */
@@ -131,6 +133,11 @@ function syncAllNow() {
     ui.alert('ยังไม่มีแท็บ "ตำแหน่ง" — ใช้เมนู "ตั้งค่าครั้งแรก" ก่อน');
     return;
   }
+  const problem = layoutProblem_(sh);
+  if (problem) {
+    ui.alert('ซิงก์ทั้งหมด', problem, ui.ButtonSet.OK);
+    return;
+  }
   const who = activeEmail_() || EDITOR_FALLBACK;
 
   const dry = apply_(collectRows_(readAll_(sh)).rows, who, { full: true, dryRun: true });
@@ -192,6 +199,11 @@ function updateFromDb() {
   const sh = mainSheet_();
   if (!sh || sh.getLastRow() < 2) {
     ui.alert('ยังไม่ได้ตั้งค่า — ใช้เมนู "ตั้งค่าครั้งแรก" ก่อน');
+    return;
+  }
+  const problem = layoutProblem_(sh); // แถวใหม่เขียนตามโครงปัจจุบัน — ต่อท้ายชีตโครงเก่าไม่ได้
+  if (problem) {
+    ui.alert('อัปเดตจากระบบ', problem, ui.ButtonSet.OK);
     return;
   }
 
@@ -266,6 +278,11 @@ function onEditInstallable(e) {
   const sh = range.getSheet();
   if (sh.getName() !== SHEET_MAIN) return;
   if (range.getLastColumn() < COL.LOCATION || range.getColumn() > COL.NOTE) return;
+  const problem = layoutProblem_(sh);
+  if (problem) {
+    logOnce_('layout', 'แก้ในชีต', problem, true);
+    return;
+  }
 
   const first = Math.max(range.getRow(), 2);
   const last = range.getLastRow();
@@ -294,6 +311,9 @@ function reconcile() {
   try {
     const sh = mainSheet_();
     if (!sh) return;
+    const problem = layoutProblem_(sh);
+    logOnce_('layout', 'ซิงก์อัตโนมัติ', problem, true); // ว่าง = ล้างค่าที่จำไว้ ให้เตือนได้อีกถ้าเกิดซ้ำ
+    if (problem) return;
     const block = readAll_(sh);
     const { rows, badIdx } = collectRows_(block);
     if (!rows.length) return;
@@ -364,7 +384,7 @@ function syncRange_(sh, startRow, numRows, editor) {
     try {
       SpreadsheetApp.getActive().toast(msg, 'ยังไม่ได้บันทึก', 15);
     } catch (err) {
-      // toast จาก trigger บางครั้งไม่ขึ้น — มีสถานะในคอลัมน์ G และบันทึกซิงก์อยู่แล้ว
+      // toast จาก trigger บางครั้งไม่ขึ้น — มีคอลัมน์สถานะและบันทึกซิงก์อยู่แล้ว
     }
   }
   writeResults_(sh, startRow, block, res, editor, badIdx);
@@ -525,7 +545,7 @@ function formatSheet_(sh, fromRow) {
     .forEach((p) => p.remove());
   [
     sh.getRange(1, 1, 1, NUM_COLS),
-    sh.getRange(2, COL.ITEM, n - 1, COL.BARCODES),
+    sh.getRange(2, 1, n - 1, COL.LOCATION - 1),
     sh.getRange(2, COL.STATUS, n - 1, 2),
   ].forEach((r) =>
     r
@@ -572,18 +592,38 @@ function mainSheet_() {
   return SpreadsheetApp.getActive().getSheetByName(SHEET_MAIN);
 }
 
+/**
+ * หัวตารางต้องตรงกับ HEADERS ก่อนอ่าน/เขียนทุกครั้ง — ไม่ตรงได้ข้อความปัญหา ตรงได้ ''
+ * ไม่ตรง = คอลัมน์ที่อ่านอาจไม่ใช่ตำแหน่ง (มีคนแทรก/ย้ายคอลัมน์ · วางโค้ดใหม่ทับชีตโครงเก่า)
+ * ถ้าซิงก์ต่อ หมายเหตุหรือหมวดจะถูกส่งเข้าระบบเป็นตำแหน่ง
+ */
+function layoutProblem_(sh) {
+  const got = sh.getRange(1, 1, 1, NUM_COLS).getDisplayValues()[0].map((v) => String(v).trim());
+  if (HEADERS.every((h, i) => got[i] === h)) return '';
+  return (
+    `⛔ หยุดซิงก์: หัวตารางแท็บ "${SHEET_MAIN}" ไม่ตรงกับที่สคริปต์รู้จัก ` +
+    `(ต้องเป็น ${HEADERS.join(' | ')} · ตอนนี้เป็น ${got.join(' | ')}) — ` +
+    'มีการแทรก/ย้ายคอลัมน์ หรือวางโค้ดใหม่ทับชีตโครงเก่า ดู README หัวข้อ "เปลี่ยนโครงคอลัมน์"'
+  );
+}
+
+/** แถวตามลำดับ HEADERS — หน่วยเรียงคู่กับบาร์โค้ด (ตัวที่ 2 ของหน่วย = หน่วยของบาร์โค้ดตัวที่ 2) */
 function sheetRow_(it, data) {
   const l = data.locById[it.item_id];
-  return [
-    it.item_id,
-    it.name || '',
-    it.category || '',
-    (data.bcById[it.item_id] || []).join(', '),
-    l ? l.location : '',
-    l && l.note ? l.note : '',
-    l ? statusText_({ action: 'unchanged', location: l.location, zone: l.zone, aisle: l.aisle, slot: l.slot }) : '',
-    l && l.updated_by ? stamp_(l.updated_by, new Date(l.updated_at)) : '',
-  ];
+  const bcs = data.bcById[it.item_id] || [];
+  const row = [];
+  row[COL.ITEM - 1] = it.item_id;
+  row[COL.BARCODES - 1] = bcs.map((b) => b.barcode).join(', ');
+  row[COL.NAME - 1] = it.name || '';
+  row[COL.UNITS - 1] = bcs.map((b) => b.unit || '-').join(', ');
+  row[COL.CATEGORY - 1] = it.category || '';
+  row[COL.LOCATION - 1] = l ? l.location : '';
+  row[COL.NOTE - 1] = l && l.note ? l.note : '';
+  row[COL.STATUS - 1] = l
+    ? statusText_({ action: 'unchanged', location: l.location, zone: l.zone, aisle: l.aisle, slot: l.slot })
+    : '';
+  row[COL.UPDATED - 1] = l && l.updated_by ? stamp_(l.updated_by, new Date(l.updated_at)) : '';
+  return row;
 }
 
 
@@ -594,7 +634,7 @@ function sheetRow_(it, data) {
 function loadFromDb_() {
   // เรียงตาม primary key — แบ่งหน้าด้วย offset ต้องเรียงด้วยค่าที่ไม่ซ้ำ ไม่งั้นแถวหาย/ซ้ำข้ามหน้า
   const items = fetchAll_('items', 'item_id,name,category', 'item_id');
-  const barcodes = fetchAll_('barcodes', 'barcode,item_id', 'barcode');
+  const barcodes = fetchAll_('barcodes', 'barcode,item_id,unit', 'barcode');
   const locs = fetchAll_(
     'item_locations',
     'item_id,location,note,updated_by,updated_at,zone,aisle,slot',
@@ -603,7 +643,7 @@ function loadFromDb_() {
 
   const bcById = {};
   barcodes.forEach((b) => {
-    (bcById[b.item_id] = bcById[b.item_id] || []).push(b.barcode);
+    (bcById[b.item_id] = bcById[b.item_id] || []).push(b);
   });
   const locById = {};
   const seen = {};
