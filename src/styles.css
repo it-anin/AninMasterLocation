@@ -503,6 +503,24 @@ a.btn { display: inline-block; box-sizing: border-box; text-align: center; text-
 .check { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
 .progress { font-size: 14px; color: var(--muted); }
 
+/* ── นำเข้าสินค้า ─────────────────────────────────────── */
+.import-page { max-width: 760px; }
+.import-title { margin: 4px 0 6px; font-size: 20px; }
+.import-sub { margin: 0 0 14px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.import-gap { margin-top: 14px; }
+.import-file { font-weight: 600; margin-bottom: 8px; word-break: break-all; }
+.import-stats { border-collapse: collapse; font-size: 14px; }
+.import-stats td { padding: 4px 16px 4px 0; vertical-align: top; }
+.import-stats td:first-child { color: var(--muted); white-space: nowrap; }
+.import-actions { display: flex; gap: 8px; margin-top: 14px; }
+.card .import-actions .btn, .card .import-gap .btn { width: auto; margin-top: 0; padding: 9px 16px; }
+.card .import-gap .btn { margin-top: 12px; }
+.import-bar { height: 10px; border-radius: 5px; background: var(--inset); overflow: hidden; margin-bottom: 6px; }
+.import-bar > div { height: 100%; background: var(--primary); transition: width 0.2s; }
+.import-ok { font-weight: 600; color: var(--ok); }
+.import-next { margin-top: 8px; font-size: 14px; line-height: 1.6; }
+.muted { color: var(--muted); font-size: 13px; }
+
 .table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .table th, .table td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
 .table th { background: var(--inset); font-size: 13px; color: var(--muted); font-weight: 600; }

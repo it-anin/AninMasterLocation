@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import aninLogo from './assets/anin-logo.png';
 import { isAndroidMode, useScanFallback } from './lib/useScanner';
 import { getStaff, isLoggedIn, logout } from './lib/auth';
@@ -8,8 +8,13 @@ import { PdaScan } from './screens/PdaScan';
 import { ProductTable } from './screens/ProductTable';
 import { DesktopSearch } from './screens/DesktopSearch';
 
+// โหลดเมื่อเปิดแท็บเท่านั้น — PDA โหลด bundle เดียวกันทุกครั้งที่เปิดแอป ไม่ต้องพก papaparse ไปด้วย
+const CatalogImport = lazy(() =>
+  import('./screens/CatalogImport').then((m) => ({ default: m.CatalogImport }))
+);
+
 /** หน้าบน Desktop — PDA ไม่มีแท็บ เพราะมีหน้าเดียว */
-type Tab = 'search' | 'manage';
+type Tab = 'search' | 'manage' | 'import';
 
 export default function App() {
   const [authed, setAuthed] = useState(isLoggedIn());
@@ -54,6 +59,12 @@ export default function App() {
             >
               จัดการข้อมูล
             </button>
+            <button
+              className={tab === 'import' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+              onClick={() => setTab('import')}
+            >
+              นำเข้าสินค้า
+            </button>
           </nav>
         )}
 
@@ -75,8 +86,12 @@ export default function App() {
           <PdaScan />
         ) : tab === 'search' ? (
           <DesktopSearch />
-        ) : (
+        ) : tab === 'manage' ? (
           <ProductTable />
+        ) : (
+          <Suspense fallback={<div className="hint">กำลังโหลด…</div>}>
+            <CatalogImport />
+          </Suspense>
         )}
       </main>
     </div>

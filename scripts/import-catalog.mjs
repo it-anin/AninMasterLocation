@@ -99,6 +99,7 @@ function parseCsv(csvPath) {
   return data;
 }
 
+// ⚠️ กฎเดียวกันอยู่ใน prepareCatalog() ของ src/lib/catalogImport.ts (แท็บนำเข้าสินค้าในเว็บ) — แก้ต้องแก้ทั้งคู่
 function buildRecords(rows) {
   const itemsMap = new Map();
   const barcodes = [];

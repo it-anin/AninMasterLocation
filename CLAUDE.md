@@ -303,6 +303,12 @@ npm run import:locations:dry    # ตรวจไฟล์ตำแหน่ง
 npm run import:locations        # เขียน item_locations
 ```
 
+**นำเข้า catalog จากคอมเครื่องไหนก็ได้:** เว็บ (desktop) → แท็บ **นำเข้าสินค้า** → เลือก `R05.106.CSV`
+ทำงานเหมือน `npm run import` ทุกอย่าง แต่ใช้ anon key ของเว็บ ไม่ต้องมี Node / `.env` / service key บนเครื่อง
+แสดงสรุปแบบ `import:dry` ก่อนกดยืนยัน · ปฏิเสธไฟล์ที่ผ่าน Excel มาแล้ว (0 นำหน้าหาย / `8.85E+12`) และไฟล์ที่ไม่ใช่ UTF-8
+⚠️ **กฎการอ่าน R05.106 อยู่ 2 ที่ ต้องตรงกัน** — `buildRecords()` ใน `scripts/import-catalog.mjs`
+และ `prepareCatalog()` ใน `src/lib/catalogImport.ts` (ตรวจ: ตัวเลขหน้าสรุปในเว็บต้องเท่ากับ `npm run import:dry`)
+
 `import` รันซ้ำได้ปลอดภัย — แตะแค่ `items`/`barcodes` ไม่แตะ `item_locations`
 แต่ **`import:locations` เขียนทับ** ถ้ารันหลังพนักงานเริ่มแก้ตำแหน่งในเว็บแล้ว
 ค่าที่แก้จะถูกเขียนทับด้วยค่าจากไฟล์ — ใช้ seed ชุดแรกเท่านั้น
@@ -395,6 +401,7 @@ src/
   screens/
     PdaScan.tsx              หน้าสแกน — ช่องเดียวรับทั้งบาร์โค้ดและ SKU
     ProductTable.tsx         หน้าจัดการบน Desktop
+    CatalogImport.tsx        แท็บนำเข้าสินค้า (R05.106.CSV) — โหลดเมื่อเปิดแท็บเท่านั้น
     Login.tsx                login รหัสร่วม
   components/
     WarehouseFloorPlan.tsx   ผังคลัง + เส้นทางเดิน + คนเดิน  ← ขั้น 1
@@ -405,6 +412,7 @@ src/
     EditLocationDialog.tsx   แก้ไขตำแหน่ง
   lib/
     queries.ts               query ทั้งหมด + parseLocation()
+    catalogImport.ts         อ่าน/ตรวจ R05.106.CSV + upsert — กฎต้องตรงกับ scripts/import-catalog.mjs
     useScanner.ts            รับ scan event + บังคับธีมสว่างบน PDA
     auth.ts / supabase.ts
   assets/
