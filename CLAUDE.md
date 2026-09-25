@@ -60,7 +60,7 @@
 
 | แก้ไฟล์ | ต้อง build APK ใหม่? |
 |---|---|
-| `src/**` (React/TS/CSS) | ❌ ไม่ต้อง — deploy ขึ้น Vercel แล้ว WebView โหลดใหม่ตอนเปิดแอป (⚠️ ตอนนี้ต้อง deploy มือ ดูหัวข้อถัดไป) |
+| `src/**` (React/TS/CSS) | ❌ ไม่ต้อง — push ขึ้น `master` แล้ว Vercel deploy เอง WebView โหลดใหม่ตอนเปิดแอป |
 | `android/**` | ✅ ต้อง — native code |
 | `sheet/**` | ❌ ไม่ต้อง — แต่ต้องวางโค้ดทับใน Apps Script editor ของชีตเอง (ไม่ deploy อัตโนมัติ) |
 
@@ -99,32 +99,21 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 | | ค่า |
 |---|---|
-| โปรเจกต์ | `aninmasterlocation` ใน team **it-anin's projects** |
-| URL | https://aninmasterlocation.vercel.app — ต้องตรงกับ `WEBAPP_URL` ใน `MainActivity.kt` |
-| Env (Production) | `VITE_SUPABASE_URL` · `VITE_SUPABASE_ANON_KEY` · `VITE_APP_PASSCODE` |
+| โปรเจกต์ | `anin-masterlocation` ใน team **it-anin's projects** · ต่อ GitHub `it-anin/AninMasterLocation` แล้ว |
+| URL | https://anin-masterlocation.vercel.app — ต้องตรงกับ `WEBAPP_URL` ใน `MainActivity.kt` |
+| Env (Production) | `VITE_SUPABASE_URL` · `VITE_SUPABASE_ANON_KEY` · `VITE_APP_PASSCODE` · `VITE_LOCATION_SHEET_URL` |
 
+- **push ขึ้น `master` = deploy อัตโนมัติ**
 - ตัวแปร `VITE_*` ถูกฝังตอน build — แก้ค่าแล้วต้อง redeploy
+  (build ก่อนใส่ env = หน้าขาวเปล่า error `supabaseUrl is required` — เคยเกิดตอนสร้างโปรเจกต์ใหม่)
 - **ห้ามใส่ `SUPABASE_SERVICE_KEY` ใน Vercel** — เว็บไม่ได้ใช้ ใช้แค่สคริปต์ import บนเครื่อง
-- `VITE_LOCATION_SHEET_URL` ยังไม่ได้ใส่ — ใส่เมื่อติดตั้ง Google Sheet เสร็จ
+- `VITE_LOCATION_SHEET_URL` มีค่า = โหมด Google Sheet (ปุ่มแก้ตำแหน่งในเว็บหายไป)
 
-### ⚠️ ยังไม่ได้ต่อ GitHub — push แล้วเว็บไม่อัปเดตเอง (ณ 2026-09-24)
+> ย้ายจากโปรเจกต์ `aninmasterlocation` (ลบแล้ว) เมื่อ 2026-09-25 — URL เดิม `aninmasterlocation.vercel.app` ใช้ไม่ได้แล้ว
+> PDA ที่ยังติดตั้ง APK ตัวเก่าจะเปิดไม่ขึ้น ต้องติดตั้ง APK ใหม่ทุกเครื่อง
+> และห้ามปล่อยให้เหลือ APK ตัวเก่า — ชื่อโดเมนเดิมว่างอยู่ ถ้ามีคนอื่นจดไป แอปเก่าจะเปิดเว็บของคนนั้น
 
-**สาเหตุ:** GitHub flag บัญชี `it-anin` ไว้ ("This account is flagged, and therefore cannot
-authorize a third party application") บัญชีที่โดน flag อนุญาตแอปใหม่ไม่ได้ Vercel จึงต่อ repo ใหม่ไม่ได้
-ทั้งที่ Vercel GitHub App ติดตั้งแบบ All repositories และมองเห็น repo นี้อยู่แล้ว
-(ตรวจได้: เปิด `github.com/it-anin` ตอนไม่ได้ login จะได้ 404)
-
-- โปรเจกต์เดิมที่ต่อ GitHub ไว้ก่อนแล้ว (Stock-Count, WH-Branch ฯลฯ) ยัง deploy อัตโนมัติได้
-- `git push` ยังใช้ได้ปกติ — ติดแค่การเชื่อมแอปใหม่
-
-**วิธีแก้ (ต้องทำตามลำดับ):**
-1. **เปิด 2FA ให้บัญชี `it-anin`** ที่ https://github.com/settings/security — GitHub บังคับก่อนให้ติดต่อ Support
-   ใช้แอป Authenticator บนเครื่องของบริษัท และเก็บ Recovery codes ไว้ที่ทีม IT เข้าถึงได้
-   (บัญชีกลาง — ถ้าคนถือเครื่องลาออกโดยไม่มีรหัสสำรอง จะเข้าบัญชีไม่ได้อีก)
-2. ส่งเรื่องขอปลด flag ที่ https://support.github.com/contact แล้วรอตอบทางอีเมล
-3. ปลด flag แล้ว → รัน `vercel git connect` ในโฟลเดอร์โปรเจกต์ — จากนั้น push = deploy อัตโนมัติ
-
-**ระหว่างนี้ deploy มือด้วย Vercel CLI** — deploy เฉพาะโค้ดที่ commit แล้ว:
+**deploy มือด้วย Vercel CLI** (สำรอง ถ้าการต่อ GitHub มีปัญหา) — deploy เฉพาะโค้ดที่ commit แล้ว:
 ```bash
 rm -rf /tmp/aninloc-deploy && mkdir -p /tmp/aninloc-deploy
 git archive HEAD | tar -x -C /tmp/aninloc-deploy
@@ -133,7 +122,7 @@ cd /tmp/aninloc-deploy && vercel deploy --prod --yes
 ```
 **อย่ารัน `vercel --prod` ตรงจากโฟลเดอร์โปรเจกต์** — ไม่แน่ว่า CLI จะข้ามไฟล์ตาม `.gitignore`
 อาจอัปโหลด `.env` (มี service key) และไฟล์ CSV ขึ้นไปด้วย
-`.vercel/` ได้จาก `vercel link --project aninmasterlocation` (ไม่ขึ้น git)
+`.vercel/` ได้จาก `vercel link --project anin-masterlocation` (ไม่ขึ้น git)
 
 ---
 
