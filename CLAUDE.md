@@ -101,7 +101,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 |---|---|
 | โปรเจกต์ | `anin-masterlocation` ใน team **it-anin's projects** · ต่อ GitHub `it-anin/AninMasterLocation` แล้ว |
 | URL | https://anin-masterlocation.vercel.app — ต้องตรงกับ `WEBAPP_URL` ใน `MainActivity.kt` |
-| Env (Production) | `VITE_SUPABASE_URL` · `VITE_SUPABASE_ANON_KEY` · `VITE_APP_PASSCODE` · `VITE_LOCATION_SHEET_URL` |
+| Env (Production) | `VITE_SUPABASE_URL` · `VITE_SUPABASE_ANON_KEY` · `VITE_LOCATION_SHEET_URL` |
 
 - **push ขึ้น `master` = deploy อัตโนมัติ**
 - ตัวแปร `VITE_*` ถูกฝังตอน build — แก้ค่าแล้วต้อง redeploy
@@ -216,9 +216,9 @@ J 6 1
 แยกด้วยรูปแบบไม่ได้ เพราะ SKU 6 หลัก กับบาร์โค้ดสั้นๆ หน้าตาเหมือนกัน
 (บางค่าเป็นทั้งสองอย่าง เช่น `900157` — ไม่มีปัญหาเพราะชี้ไปสินค้าตัวเดียวกัน)
 
-**PDA ดูตำแหน่งอย่างเดียว ไม่มีปุ่มแก้ไข** — พนักงานหน้างานไม่มีสิทธิ์แก้ตำแหน่ง
-แก้ได้ที่หน้าจัดการบน desktop หรือ Google Sheet เท่านั้น (`PdaScan` ไม่ส่ง `onEdit` ให้ `LocationResult`)
-⚠️ เป็นการซ่อนที่หน้าจอเท่านั้น — anon key ยังเขียน DB ได้ (ดูหัวข้อความปลอดภัย)
+**ปุ่มแก้ตำแหน่งขึ้นกับบทบาทที่ล็อกอิน** (ดูหัวข้อบทบาทผู้ใช้ด้านล่าง) — packing ดูอย่างเดียว · admin แก้ได้
+โหมด Google Sheet: admin บน PDA เห็นแค่ข้อความ "แก้ตำแหน่งได้ที่ Google Sheet บนคอมพิวเตอร์"
+ไม่ใส่ลิงก์ชีต — จอ 480px ใช้ชีตไม่ได้จริง และ Google ไม่ให้ล็อกอินใน WebView
 
 **โหมด PDA บังคับธีมสว่างเสมอ** ไม่ตามการตั้งค่าเครื่อง — คลังแสงจ้า จอมืดอ่านไม่ออก
 (`forceLightOnPda()` ใน `useScanner.ts` ตั้งก่อน React render แรก กันจอกะพริบ)
@@ -369,6 +369,21 @@ debug ฝั่งเว็บ: Chrome บน PC → `chrome://inspect` → เ�
 ระบบใช้ login แบบ **รหัสร่วม** ตรวจฝั่ง client เท่านั้น ไม่มี identity รายคนระดับฐานข้อมูล
 RLS เปิดอยู่แต่ policy อนุญาต `anon` ทำได้ทุกอย่าง
 
+### บทบาทผู้ใช้ — รหัสที่กรอกเป็นตัวกำหนด
+
+| บทบาท | รหัส | Desktop | PDA |
+|---|---|---|---|
+| **admin** | `0000` | ครบ 3 แท็บ · แก้ตำแหน่ง/ลบสินค้า/นำเข้า | แก้ตำแหน่งได้ |
+| **packing** | `1234` | แท็บ **ค้นหาตำแหน่ง** อย่างเดียว · ไม่มีปุ่มแก้ | ดูอย่างเดียว |
+
+- รหัสตั้งไว้ใน `PASSCODES` ของ `src/lib/auth.ts` (ไม่ใช่ env) — เปลี่ยนรหัส = แก้แล้ว push
+- บทบาทเก็บใน localStorage `aninloc:role` · ไม่มีหรือค่าไม่รู้จัก = ต้องล็อกอินใหม่
+  **ห้ามเดา default เป็น admin** — เครื่องที่ล็อกอินค้างก่อนมีระบบบทบาทจะได้สิทธิ์แก้ไปเฉยๆ
+- สิทธิ์ส่งลงไปเป็น prop `canEdit` (`PdaScan` / `DesktopSearch`) → ไม่ส่ง `onEdit` ให้ `LocationResult`
+  แท็บ admin ตรวจที่ `App.tsx` (`page`) ไม่ใช่แค่ซ่อนปุ่มแท็บ — กัน `tab` ค้างจาก admin คนก่อนในหน้าต่างเดียวกัน
+- ⚠️ **เป็นการซ่อนที่หน้าจอเท่านั้น** — รหัสอยู่ใน JS bundle, แก้ localStorage เป็น admin เองได้,
+  และ anon key ยังเขียน DB ได้ กันพนักงานแก้ผิดโดยไม่ตั้งใจ ไม่ได้กันคนที่ตั้งใจ
+
 **ความเสี่ยงที่ยอมรับ:** ใครที่รู้ URL + anon key เข้าถึงข้อมูลได้โดยตรงแม้ไม่รู้รหัสหน้าเว็บ
 ยอมรับได้เพราะเป็นข้อมูลตำแหน่งสินค้าภายในคลัง ไม่ใช่ข้อมูลส่วนบุคคล
 
@@ -392,7 +407,7 @@ src/
     PdaScan.tsx              หน้าสแกน — ช่องเดียวรับทั้งบาร์โค้ดและ SKU
     ProductTable.tsx         หน้าจัดการบน Desktop
     CatalogImport.tsx        แท็บนำเข้าสินค้า (R05.106.CSV) — โหลดเมื่อเปิดแท็บเท่านั้น
-    Login.tsx                login รหัสร่วม
+    Login.tsx                login รหัสร่วม — รหัสกำหนดบทบาท admin / packing
   components/
     WarehouseFloorPlan.tsx   ผังคลัง + เส้นทางเดิน + คนเดิน  ← ขั้น 1
     FloorPlanZoomDialog.tsx  ภาพผังขยายเต็มจอ (แตะที่ไหนก็ปิด)
@@ -404,7 +419,8 @@ src/
     queries.ts               query ทั้งหมด + parseLocation()
     catalogImport.ts         อ่าน/ตรวจ R05.106.CSV + upsert — กฎต้องตรงกับ scripts/import-catalog.mjs
     useScanner.ts            รับ scan event + บังคับธีมสว่างบน PDA
-    auth.ts / supabase.ts
+    auth.ts                  รหัส → บทบาท (PASSCODES) · เก็บ/อ่าน session
+    supabase.ts
   assets/
     warehouse-wh.jpg         ผังคลังมองจากบน 1280×417
     rack-front.png           ชั้นวางหลัก 850×395 (6 ชั้น 6 ช่อง)

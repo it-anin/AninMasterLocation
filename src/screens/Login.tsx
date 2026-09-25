@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { checkPasscode, login } from '../lib/auth';
+import { login, roleForPasscode, type Role } from '../lib/auth';
 import { isAndroidMode } from '../lib/useScanner';
 
-export function Login({ onDone }: { onDone: () => void }) {
+export function Login({ onDone }: { onDone: (role: Role) => void }) {
   const [code, setCode] = useState('');
   const [staff, setStaff] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!checkPasscode(code)) {
+    const role = roleForPasscode(code);
+    if (!role) {
       setError('รหัสไม่ถูกต้อง');
       return;
     }
@@ -17,8 +18,8 @@ export function Login({ onDone }: { onDone: () => void }) {
       setError('กรุณากรอกชื่อผู้ใช้งาน');
       return;
     }
-    login(staff);
-    onDone();
+    login(staff, role);
+    onDone(role);
   }
 
   return (

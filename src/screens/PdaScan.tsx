@@ -3,10 +3,14 @@ import { useScanner } from '../lib/useScanner';
 import {
   lookupBarcode,
   loadWarehouseMap,
+  parseLocation,
+  saveLocation,
   searchSku,
   type LookupResult,
   type MapCell,
 } from '../lib/queries';
+import { getStaff } from '../lib/auth';
+import { EditLocationDialog } from '../components/EditLocationDialog';
 import { LocationResult } from '../components/LocationResult';
 
 type State =
@@ -21,22 +25,27 @@ type State =
 const SEARCH_LIMIT = 25;
 
 /**
- * หน้าสแกนบน PDA — ดูตำแหน่งอย่างเดียว ไม่มีปุ่มแก้
- * พนักงานหน้างานไม่มีสิทธิ์แก้ตำแหน่ง (แก้ได้ที่หน้าจัดการ/Google Sheet บนคอมพิวเตอร์)
+ * หน้าสแกนบน PDA
+ *
+ * canEdit = false (packing) → ดูตำแหน่งอย่างเดียว ไม่มีปุ่มแก้
+ * canEdit = true  (admin)   → แก้ในเครื่องได้ · โหมด Google Sheet ขึ้นข้อความให้ไปแก้ที่ชีตแทน
  */
-export function PdaScan() {
+export function PdaScan({ canEdit }: { canEdit: boolean }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const [editing, setEditing] = useState(false);
   const [mapCells, setMapCells] = useState<MapCell[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // โหลดผังคลังครั้งเดียวตอนเปิดหน้า
-  useEffect(() => {
+  // โหลดผังคลังครั้งเดียวตอนเปิดหน้า แล้วรีเฟรชเมื่อมีการกรอกตำแหน่งใหม่
+  const refreshMap = useCallback(() => {
     loadWarehouseMap()
       .then(setMapCells)
       .catch(() => {
         // ผังโหลดไม่ได้ก็ยังใช้งานได้ — จะ fallback ไปแสดงรหัสตัวใหญ่
       });
   }, []);
+
+  useEffect(refreshMap, [refreshMap]);
 
   const focusInput = useCallback(() => {
     // หน่วงนิดเดียวให้ DOM อัปเดตเสร็จก่อน ไม่งั้น focus ไม่ติดบางจังหวะ
@@ -94,7 +103,8 @@ export function PdaScan() {
     beep(row.location ? 'ok' : 'warn');
   }, []);
 
-  useScanner(handleScan);
+  // ปิดตัวสแกนตอนเปิดหน้าแก้ตำแหน่ง ไม่งั้นการพิมพ์จะถูกดักเป็นบาร์โค้ด
+  useScanner(handleScan, !editing);
 
   useEffect(() => {
     focusInput();
@@ -189,8 +199,48 @@ export function PdaScan() {
           </div>
         )}
 
-        {found && <LocationResult found={found} mapCells={mapCells} />}
+        {found && (
+          <LocationResult
+            found={found}
+            mapCells={mapCells}
+            onEdit={canEdit ? () => setEditing(true) : undefined}
+          />
+        )}
       </div>
+
+      {canEdit && editing && found && (
+        <EditLocationDialog
+          itemId={found.item_id}
+          itemName={found.name}
+          current={found.location}
+          currentNote={found.note}
+          onClose={() => {
+            setEditing(false);
+            focusInput();
+          }}
+          onSaved={async (loc, note) => {
+            await saveLocation(found.item_id, loc, getStaff() || 'ไม่ระบุ', note);
+            // ⚠️ zone/aisle/slot เป็น generated column ฝั่ง DB — ต้องคำนวณซ้ำฝั่งนี้ด้วย
+            //    ไม่งั้นผังจะไฮไลท์ช่องเก่าจนกว่าจะสแกนใหม่
+            const parsed = parseLocation(loc);
+            setState({
+              kind: 'found',
+              data: {
+                ...found,
+                location: loc,
+                zone: parsed.zone,
+                aisle: parsed.aisle,
+                slot: parsed.slot,
+                note: note ?? null,
+                updated_by: getStaff(),
+              },
+            });
+            setEditing(false);
+            refreshMap(); // ตำแหน่งใหม่อาจเป็นโซน/ชั้นที่ยังไม่เคยมีในผัง
+            focusInput();
+          }}
+        />
+      )}
     </div>
   );
 }

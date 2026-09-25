@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import aninLogo from './assets/anin-logo.png';
 import { isAndroidMode, useScanFallback } from './lib/useScanner';
-import { getStaff, isLoggedIn, logout } from './lib/auth';
+import { getRole, getStaff, logout, ROLE_LABEL, type Role } from './lib/auth';
 import { isConfigured } from './lib/supabase';
 import { Login } from './screens/Login';
 import { PdaScan } from './screens/PdaScan';
@@ -17,7 +17,8 @@ const CatalogImport = lazy(() =>
 type Tab = 'search' | 'manage' | 'import';
 
 export default function App() {
-  const [authed, setAuthed] = useState(isLoggedIn());
+  /** null = ยังไม่ล็อกอิน */
+  const [role, setRole] = useState<Role | null>(getRole);
   const [tab, setTab] = useState<Tab>('search');
 
   // listener ชั้น fallback สำหรับหน้าที่ไม่มี handler เฉพาะ
@@ -34,7 +35,12 @@ export default function App() {
     );
   }
 
-  if (!authed) return <Login onDone={() => setAuthed(true)} />;
+  if (!role) return <Login onDone={setRole} />;
+
+  // packing: แท็บค้นหาอย่างเดียว ไม่มีปุ่มแก้ตำแหน่ง
+  // ไม่พึ่งแค่การซ่อนปุ่มแท็บ — tab อาจค้าง 'manage' จาก admin ที่ออกก่อนหน้าในหน้าต่างเดียวกัน
+  const isAdmin = role === 'admin';
+  const page: Tab = isAdmin ? tab : 'search';
 
   return (
     <div className={isAndroidMode ? 'app app-pda' : 'app'}>
@@ -48,33 +54,40 @@ export default function App() {
         {!isAndroidMode && (
           <nav className="tabs-nav">
             <button
-              className={tab === 'search' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+              className={page === 'search' ? 'tab-btn tab-btn-on' : 'tab-btn'}
               onClick={() => setTab('search')}
             >
               ค้นหาตำแหน่ง
             </button>
-            <button
-              className={tab === 'manage' ? 'tab-btn tab-btn-on' : 'tab-btn'}
-              onClick={() => setTab('manage')}
-            >
-              จัดการข้อมูล
-            </button>
-            <button
-              className={tab === 'import' ? 'tab-btn tab-btn-on' : 'tab-btn'}
-              onClick={() => setTab('import')}
-            >
-              นำเข้าสินค้า
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  className={page === 'manage' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+                  onClick={() => setTab('manage')}
+                >
+                  จัดการข้อมูล
+                </button>
+                <button
+                  className={page === 'import' ? 'tab-btn tab-btn-on' : 'tab-btn'}
+                  onClick={() => setTab('import')}
+                >
+                  นำเข้าสินค้า
+                </button>
+              </>
+            )}
           </nav>
         )}
 
         <span className="spacer" />
-        <span className="staff">👤 {getStaff()}</span>
+        <span className="staff">
+          👤 {getStaff()} <span className="role-tag">{ROLE_LABEL[role]}</span>
+        </span>
         <button
           className="btn btn-sm"
           onClick={() => {
             logout();
-            setAuthed(false);
+            setRole(null);
+            setTab('search');
           }}
         >
           ออก
@@ -83,10 +96,10 @@ export default function App() {
 
       <main>
         {isAndroidMode ? (
-          <PdaScan />
-        ) : tab === 'search' ? (
-          <DesktopSearch />
-        ) : tab === 'manage' ? (
+          <PdaScan canEdit={isAdmin} />
+        ) : page === 'search' ? (
+          <DesktopSearch canEdit={isAdmin} />
+        ) : page === 'manage' ? (
           <ProductTable />
         ) : (
           <Suspense fallback={<div className="hint">กำลังโหลด…</div>}>

@@ -20,6 +20,8 @@ import { LocationResult } from '../components/LocationResult';
  *
  * ⚠️ ไม่ได้ผูกกับตัวสแกน (useScanner) เพราะหน้านี้ใช้บนคอมพิวเตอร์
  *    ถ้าต่อเครื่องสแกนแบบ USB ก็ยังใช้ได้ เพราะมันพิมพ์ลงช่องแล้วกด Enter เอง
+ *
+ * canEdit = false (packing) → ไม่มีปุ่มแก้ตำแหน่ง ดูอย่างเดียว
  */
 
 const SEARCH_LIMIT = 25;
@@ -32,7 +34,7 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'results'; q: string; rows: LookupResult[] };
 
-export function DesktopSearch() {
+export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [editing, setEditing] = useState(false);
   const [mapCells, setMapCells] = useState<MapCell[]>([]);
@@ -152,12 +154,12 @@ export function DesktopSearch() {
           <LocationResult
             found={found}
             mapCells={mapCells}
-            onEdit={() => setEditing(true)}
+            onEdit={canEdit ? () => setEditing(true) : undefined}
           />
         )}
       </div>
 
-      {editing && found && (
+      {canEdit && editing && found && (
         <EditLocationDialog
           itemId={found.item_id}
           itemName={found.name}
