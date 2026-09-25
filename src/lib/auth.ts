@@ -26,19 +26,20 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 const KEY_AUTH = 'aninloc:auth';
-const KEY_STAFF = 'aninloc:staff';
 const KEY_ROLE = 'aninloc:role';
+/** ชื่อผู้ใช้จากหน้าล็อกอินแบบเก่า — ไม่ใช้แล้ว เก็บชื่อ key ไว้ลบทิ้งตอนล็อกอิน/ออก */
+const KEY_STAFF_OLD = 'aninloc:staff';
 
 /** รหัสถูก → บทบาท · ผิด → null */
 export function roleForPasscode(input: string): Role | null {
   return PASSCODES[input.trim()] ?? null;
 }
 
-export function login(staffName: string, role: Role) {
+export function login(role: Role) {
   try {
     localStorage.setItem(KEY_AUTH, '1');
-    localStorage.setItem(KEY_STAFF, staffName.trim());
     localStorage.setItem(KEY_ROLE, role);
+    localStorage.removeItem(KEY_STAFF_OLD);
   } catch {
     // localStorage ใช้ไม่ได้ (private mode) — ยังใช้งานต่อได้ในรอบนี้
   }
@@ -47,8 +48,8 @@ export function login(staffName: string, role: Role) {
 export function logout() {
   try {
     localStorage.removeItem(KEY_AUTH);
-    localStorage.removeItem(KEY_STAFF);
     localStorage.removeItem(KEY_ROLE);
+    localStorage.removeItem(KEY_STAFF_OLD);
   } catch {
     /* ignore */
   }
@@ -62,7 +63,7 @@ export function logout() {
  */
 export function getRole(): Role | null {
   try {
-    if (localStorage.getItem(KEY_AUTH) !== '1' || !getStaff()) return null;
+    if (localStorage.getItem(KEY_AUTH) !== '1') return null;
     const role = localStorage.getItem(KEY_ROLE);
     return role === 'admin' || role === 'packing' ? role : null;
   } catch {
@@ -70,10 +71,13 @@ export function getRole(): Role | null {
   }
 }
 
+/**
+ * ชื่อที่บันทึกลงประวัติ (updated_by / changed_by / deleted_by) = ชื่อบทบาท
+ *
+ * ไม่มีช่องกรอกชื่อแล้ว — รหัสบอกบทบาทอยู่แล้ว
+ * ⚠️ ประวัติจึงบอกได้แค่ว่า "Admin" แก้ ไม่รู้ว่าเป็นใคร (แก้จาก Google Sheet ยังได้อีเมลเหมือนเดิม)
+ */
 export function getStaff(): string {
-  try {
-    return localStorage.getItem(KEY_STAFF) ?? '';
-  } catch {
-    return '';
-  }
+  const role = getRole();
+  return role ? ROLE_LABEL[role] : '';
 }

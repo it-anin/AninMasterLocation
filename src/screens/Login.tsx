@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { login, roleForPasscode, type Role } from '../lib/auth';
 import { isAndroidMode } from '../lib/useScanner';
 
+/** ช่องเดียว — รหัสบอกบทบาทอยู่แล้ว (admin / packing) ไม่ต้องกรอกชื่อ */
 export function Login({ onDone }: { onDone: (role: Role) => void }) {
   const [code, setCode] = useState('');
-  const [staff, setStaff] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function submit(e: React.FormEvent) {
@@ -14,11 +14,7 @@ export function Login({ onDone }: { onDone: (role: Role) => void }) {
       setError('รหัสไม่ถูกต้อง');
       return;
     }
-    if (!staff.trim()) {
-      setError('กรุณากรอกชื่อผู้ใช้งาน');
-      return;
-    }
-    login(staff, role);
+    login(role);
     onDone(role);
   }
 
@@ -34,16 +30,8 @@ export function Login({ onDone }: { onDone: (role: Role) => void }) {
           type="password"
           value={code}
           autoComplete="off"
+          autoFocus
           onChange={(e) => setCode(e.target.value)}
-        />
-
-        <label className="field-label">ชื่อผู้ใช้งาน</label>
-        <input
-          className="field"
-          value={staff}
-          placeholder="เช่น สมชาย"
-          autoComplete="off"
-          onChange={(e) => setStaff(e.target.value)}
         />
 
         {error && <div className="dialog-error">{error}</div>}
@@ -51,8 +39,6 @@ export function Login({ onDone }: { onDone: (role: Role) => void }) {
         <button className="btn btn-primary btn-block" type="submit">
           เข้าใช้งาน
         </button>
-
-        <div className="login-note">ชื่อผู้ใช้งานจะถูกบันทึกไว้ในประวัติการแก้ไขตำแหน่ง</div>
       </form>
     </div>
   );

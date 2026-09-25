@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import aninLogo from './assets/anin-logo.png';
 import { isAndroidMode, useScanFallback } from './lib/useScanner';
-import { getRole, getStaff, logout, ROLE_LABEL, type Role } from './lib/auth';
+import { getRole, logout, ROLE_LABEL, type Role } from './lib/auth';
 import { isConfigured } from './lib/supabase';
 import { Login } from './screens/Login';
 import { PdaScan } from './screens/PdaScan';
@@ -79,9 +79,7 @@ export default function App() {
         )}
 
         <span className="spacer" />
-        <span className="staff">
-          👤 {getStaff()} <span className="role-tag">{ROLE_LABEL[role]}</span>
-        </span>
+        <span className="staff">👤 {ROLE_LABEL[role]}</span>
         <button
           className="btn btn-sm"
           onClick={() => {
