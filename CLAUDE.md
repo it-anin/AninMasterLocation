@@ -276,6 +276,7 @@ cp .env.example .env        # แล้วเติมค่าจาก Supabas
 | `0005_search_by_zone.sql` | กรองรายการตามโซนในหน้าจัดการ |
 | `0006_sheet_sync.sql` | `sheet_apply()` สำหรับ Google Sheet + ประวัติบันทึก `source = 'sheet'` |
 | `0007_deleted_items.sql` | `delete_item()` + ตาราง `deleted_items` — สินค้าที่ลบแล้ว import ไม่เพิ่มกลับ |
+| `0008_sort_by_location.sql` | หน้าจัดการเรียงตามตำแหน่ง โซน → เชลฟ์ → ชั้น (รหัสพิเศษต่อท้าย · ไม่มีตำแหน่งท้ายสุด) |
 
 จากนั้น **Settings → API → Exposed schemas → เพิ่ม `anin_loc`** ← ลืมบ่อยที่สุด
 ถ้าไม่ทำจะเจอ `The schema must be one of the following: public`
