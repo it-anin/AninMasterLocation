@@ -1,0 +1,9 @@
+{
+  "name": "run-aninmaster-location-driver",
+  "private": true,
+  "type": "module",
+  "description": "Driver ของ skill run-aninmaster-location — แยกจาก package.json ของแอป เพื่อไม่ให้ playwright-core ไปปนกับ dependency ที่ build ขึ้น Vercel",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}
