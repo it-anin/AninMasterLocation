@@ -5,6 +5,7 @@ import {
   loadWarehouseMap,
   parseLocation,
   saveLocation,
+  searchName,
   searchSku,
   type LookupResult,
   type MapCell,
@@ -19,9 +20,10 @@ type State =
   | { kind: 'found'; data: LookupResult }
   | { kind: 'notfound'; barcode: string }
   | { kind: 'error'; message: string }
-  | { kind: 'results'; q: string; rows: LookupResult[] };
+  /** by = ค้นเจอด้วยอะไร — ใช้เลือกข้อความแนะนำตอนผลเต็มหน้า */
+  | { kind: 'results'; q: string; rows: LookupResult[]; by: 'sku' | 'name' };
 
-/** จำนวนผลค้นหาสูงสุดที่แสดง — ต้องตรงกับค่าที่ส่งให้ searchSku */
+/** จำนวนผลค้นหาสูงสุดที่แสดง — ต้องตรงกับค่าที่ส่งให้ searchSku / searchName */
 const SEARCH_LIMIT = 25;
 
 /**
@@ -53,11 +55,12 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
   }, []);
 
   /**
-   * ช่องเดียวรับทั้งบาร์โค้ดและ SKU — ระบบเดาเอง
+   * ช่องเดียวรับทั้งบาร์โค้ด SKU และชื่อสินค้า — ระบบเดาเอง
    *
    * ลองหาบาร์โค้ดก่อนเสมอ เพราะเป็นงานหลักและต้องเร็วที่สุด
-   * ไม่เจอค่อยหา SKU ต่อ — แยกด้วยรูปแบบไม่ได้ เพราะ SKU กับบาร์โค้ดสั้นๆ
+   * ไม่เจอค่อยหา SKU แล้วค่อยหาชื่อ — แยกด้วยรูปแบบไม่ได้ เพราะ SKU กับบาร์โค้ดสั้นๆ
    * หน้าตาเหมือนกัน (SKU 6 หลัก เช่น 900157 · บาร์โค้ดก็มีแบบสั้นเช่น 30031812)
+   * ชื่อค้นเป็นขั้นสุดท้าย — ยิงบาร์โค้ดไม่เสียเวลาเพิ่ม และ SKU ที่พิมพ์ไม่ครบยังได้ผลเหมือนเดิม
    */
   const handleScan = useCallback(
     async (raw: string) => {
@@ -77,13 +80,19 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
           return;
         }
 
-        // 2. ไม่เจอ → ลองเป็น SKU
-        const rows = await searchSku(q, SEARCH_LIMIT);
+        // 2. ไม่เจอ → ลองเป็น SKU · ยังไม่เจออีก → ลองเป็นชื่อสินค้า
+        let by: 'sku' | 'name' = 'sku';
+        let rows = await searchSku(q, SEARCH_LIMIT);
+        if (rows.length === 0) {
+          by = 'name';
+          rows = await searchName(q, SEARCH_LIMIT);
+        }
+
         if (rows.length === 1) {
           setState({ kind: 'found', data: rows[0] });
           beep(rows[0].location ? 'ok' : 'warn');
         } else if (rows.length > 1) {
-          setState({ kind: 'results', q, rows });
+          setState({ kind: 'results', q, rows, by });
         } else {
           setState({ kind: 'notfound', barcode: q });
           beep('error');
@@ -113,6 +122,11 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // ไม่ปล่อย Enter ลอยขึ้นไปถึง keyboard-wedge ของ useScanner (ฟังที่ window)
+      // ไม่งั้นค้นซ้อน 2 ชุด: ชุดจากข้อความในช่อง + ชุดจากตัวอักษรท้ายๆ ที่ wedge เก็บไว้
+      // พิมพ์ชื่อสินค้าแล้วเว้นจังหวะกลางคำ (> 150ms) ผลที่ขึ้นจะเป็นของชุดที่ตอบกลับทีหลัง
+      // ไม่ใช่สิ่งที่พิมพ์ — ส่วน wedge ตอนช่องไม่ได้ focus ยังทำงานตามเดิม
+      e.stopPropagation();
       // อ่านจาก DOM ตรงๆ ไม่ผ่าน React state — state update เป็น async
       // อาจ stale ไม่ทันตอนสแกนรัวๆ
       handleScan(e.currentTarget.value);
@@ -126,7 +140,7 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
       <input
         ref={inputRef}
         className="scan-input"
-        placeholder="Barcode หรือ SKU"
+        placeholder="Barcode, SKU หรือชื่อสินค้า"
         autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}
@@ -137,9 +151,9 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
       <div className="result-area">
         {state.kind === 'idle' && (
           <div className="hint">
-            ยิงบาร์โค้ด หรือพิมพ์ SKU แล้วกด Enter
+            ยิงบาร์โค้ด หรือพิมพ์ SKU / ชื่อสินค้า แล้วกด Enter
             <br />
-            (พิมพ์ SKU ไม่ครบก็ได้ เช่น 1000)
+            (พิมพ์ไม่ครบก็ได้ เช่น 1000 หรือ vitamin)
           </div>
         )}
 
@@ -155,10 +169,12 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
             ) : (
               <>
                 <div className="res-head">
-                  {/* searchSku จำกัด 25 แถว — ถ้าเต็มแปลว่าอาจมีมากกว่านี้
-                      บอกให้พิมพ์ SKU เพิ่ม ดีกว่าโชว์ตัวเลขที่ไม่ใช่ทั้งหมดจริง */}
+                  {/* ค้นจำกัด 25 แถว — ถ้าเต็มแปลว่าอาจมีมากกว่านี้
+                      บอกให้พิมพ์เพิ่ม ดีกว่าโชว์ตัวเลขที่ไม่ใช่ทั้งหมดจริง */}
                   {state.rows.length >= SEARCH_LIMIT
-                    ? `แสดง ${SEARCH_LIMIT} รายการแรก — พิมพ์ SKU ให้ยาวขึ้นเพื่อแคบผลลัพธ์`
+                    ? `แสดง ${SEARCH_LIMIT} รายการแรก — พิมพ์${
+                        state.by === 'name' ? 'ชื่อ' : ' SKU '
+                      }ให้ยาวขึ้นเพื่อแคบผลลัพธ์`
                     : `พบ ${state.rows.length} รายการ — แตะเพื่อดูตำแหน่ง`}
                 </div>
                 {state.rows.map((r) => (
@@ -194,7 +210,7 @@ export function PdaScan({ canEdit }: { canEdit: boolean }) {
             <div className="card-title">ไม่พบสินค้า</div>
             <div className="barcode-line">{state.barcode}</div>
             <div className="card-sub">
-              บาร์โค้ดนี้ยังไม่มีในระบบ — เพิ่มได้จากหน้าจัดการบนคอมพิวเตอร์
+              ไม่มีบาร์โค้ด SKU หรือชื่อสินค้านี้ในระบบ — บาร์โค้ดใหม่เพิ่มได้จากหน้าจัดการบนคอมพิวเตอร์
             </div>
           </div>
         )}

@@ -128,10 +128,41 @@ export async function searchSku(sku: string, limit = 25): Promise<LookupResult[]
     .limit(limit * 4); // เผื่อแถวซ้ำจากหลายบาร์โค้ด
 
   if (error) throw new Error(error.message);
+  return dedupeByItem((data ?? []) as LookupResult[], limit);
+}
 
+/**
+ * ค้นหาด้วยชื่อสินค้า — คำนั้นอยู่ตรงไหนของชื่อก็เจอ ไม่ต้องขึ้นต้นด้วย
+ *
+ * พิมพ์หลายคำเว้นวรรค = ต้องมีครบทุกคำ (ลำดับไม่สำคัญ) เช่น "Vitamin 500"
+ * ไม่สนตัวพิมพ์เล็ก/ใหญ่ · ใช้ index items_name_trgm ที่สร้างไว้แล้วใน 0001 ไม่ต้องรัน SQL เพิ่ม
+ *
+ * % _ * \ ถือเป็นตัวคั่นคำ ไม่ใช่ตัวอักษร — เพราะเป็นตัวแทน (wildcard) ของ LIKE / PostgREST
+ * ถ้าปล่อยผ่าน พิมพ์ "%" ตัวเดียวจะจับคู่ทุกสินค้า · จะ escape ด้วย \ ก็ไม่ได้ เพราะ PostgREST
+ * กิน backslash ไปหนึ่งชั้นก่อนถึง Postgres (ทดสอบแล้ว ต้องใส่ \\ ถึงจะได้ผล — พึ่งไม่ได้)
+ * ผลคือ "50%" ค้นเป็น "50" — กว้างกว่าเล็กน้อย แต่ไม่พลาดสินค้า
+ */
+export async function searchName(text: string, limit = 25): Promise<LookupResult[]> {
+  const words = text.split(/[\s%_*\\]+/).filter(Boolean).slice(0, 5);
+  if (words.length === 0) return [];
+
+  let query = supabase.from('v_barcode_lookup').select('*');
+  for (const w of words) query = query.ilike('name', `%${w}%`);
+
+  const { data, error } = await query
+    .order('name')
+    .order('item_id') // ชื่อซ้ำกันได้ — ให้ลำดับตายตัว
+    .limit(limit * 4); // เผื่อแถวซ้ำจากหลายบาร์โค้ด
+
+  if (error) throw new Error(error.message);
+  return dedupeByItem((data ?? []) as LookupResult[], limit);
+}
+
+/** v_barcode_lookup คืน 1 แถวต่อบาร์โค้ด — รวมให้เหลือ 1 แถวต่อสินค้า */
+function dedupeByItem(rows: LookupResult[], limit: number): LookupResult[] {
   const seen = new Set<string>();
   const out: LookupResult[] = [];
-  for (const row of (data ?? []) as LookupResult[]) {
+  for (const row of rows) {
     if (seen.has(row.item_id)) continue;
     seen.add(row.item_id);
     out.push(row);

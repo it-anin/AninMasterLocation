@@ -4,6 +4,7 @@ import {
   loadWarehouseMap,
   parseLocation,
   saveLocation,
+  searchName,
   searchSku,
   type LookupResult,
   type MapCell,
@@ -32,7 +33,7 @@ type State =
   | { kind: 'found'; data: LookupResult }
   | { kind: 'notfound'; q: string }
   | { kind: 'error'; message: string }
-  | { kind: 'results'; q: string; rows: LookupResult[] };
+  | { kind: 'results'; q: string; rows: LookupResult[]; by: 'sku' | 'name' };
 
 export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -51,7 +52,7 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
   useEffect(refreshMap, [refreshMap]);
   useEffect(() => inputRef.current?.focus(), []);
 
-  /** ลอจิกเดียวกับหน้า PDA — หาบาร์โค้ดก่อน ไม่เจอค่อยหา SKU */
+  /** ลอจิกเดียวกับหน้า PDA — หาบาร์โค้ดก่อน ไม่เจอค่อยหา SKU แล้วค่อยหาชื่อสินค้า */
   const handleSearch = useCallback(async (raw: string) => {
     const q = raw.trim();
     if (!q) return;
@@ -63,9 +64,16 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
         setState({ kind: 'found', data });
         return;
       }
-      const rows = await searchSku(q, SEARCH_LIMIT);
+
+      let by: 'sku' | 'name' = 'sku';
+      let rows = await searchSku(q, SEARCH_LIMIT);
+      if (rows.length === 0) {
+        by = 'name';
+        rows = await searchName(q, SEARCH_LIMIT);
+      }
+
       if (rows.length === 1) setState({ kind: 'found', data: rows[0] });
-      else if (rows.length > 1) setState({ kind: 'results', q, rows });
+      else if (rows.length > 1) setState({ kind: 'results', q, rows, by });
       else setState({ kind: 'notfound', q });
     } catch (e) {
       setState({ kind: 'error', message: (e as Error).message });
@@ -80,7 +88,7 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
         <input
           ref={inputRef}
           className="field dsearch-input"
-          placeholder="ยิงบาร์โค้ด หรือพิมพ์ SKU แล้วกด Enter"
+          placeholder="ยิงบาร์โค้ด หรือพิมพ์ SKU / ชื่อสินค้า แล้วกด Enter"
           autoComplete="off"
           spellCheck={false}
           onKeyDown={(e) => {
@@ -101,9 +109,9 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
       <div className="dsearch-body">
         {state.kind === 'idle' && (
           <div className="hint">
-            ยิงบาร์โค้ด หรือพิมพ์ SKU แล้วกด Enter
+            ยิงบาร์โค้ด หรือพิมพ์ SKU / ชื่อสินค้า แล้วกด Enter
             <br />
-            (พิมพ์ SKU ไม่ครบก็ได้ เช่น 1000)
+            (พิมพ์ไม่ครบก็ได้ เช่น 1000 หรือ vitamin)
           </div>
         )}
 
@@ -120,7 +128,7 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
           <div className="card card-error">
             <div className="card-title">ไม่พบสินค้า</div>
             <div className="barcode-line">{state.q}</div>
-            <div className="card-sub">ไม่มีบาร์โค้ดหรือ SKU ที่ตรงกับที่ค้น</div>
+            <div className="card-sub">ไม่มีบาร์โค้ด SKU หรือชื่อสินค้าที่ตรงกับที่ค้น</div>
           </div>
         )}
 
@@ -128,7 +136,9 @@ export function DesktopSearch({ canEdit }: { canEdit: boolean }) {
           <div className="card">
             <div className="res-head">
               {state.rows.length >= SEARCH_LIMIT
-                ? `แสดง ${SEARCH_LIMIT} รายการแรก — พิมพ์ SKU ให้ยาวขึ้นเพื่อแคบผลลัพธ์`
+                ? `แสดง ${SEARCH_LIMIT} รายการแรก — พิมพ์${
+                    state.by === 'name' ? 'ชื่อ' : ' SKU '
+                  }ให้ยาวขึ้นเพื่อแคบผลลัพธ์`
                 : `พบ ${state.rows.length} รายการ — คลิกเพื่อดูตำแหน่ง`}
             </div>
             {state.rows.map((r) => (
